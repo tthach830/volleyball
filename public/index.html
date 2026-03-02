@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Santa Cruz Volleyball Courts – Availability</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header>
+      <div class="header-content">
+        <span class="volleyball-icon">🏐</span>
+        <div>
+          <h1>Santa Cruz Volleyball Courts</h1>
+          <p class="subtitle">Live Oak / Loch Lomond Community Center</p>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <section class="controls">
+        <button id="refreshBtn" class="btn-primary" onclick="loadAvailability()">
+          Check Availability
+        </button>
+        <a
+          id="directLink"
+          href="https://casantacruzweb.myvscloud.com/webtrac/web/search.html?search=yes&module=FR&location=LNCC"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="btn-secondary"
+        >
+          Open Booking Site ↗
+        </a>
+      </section>
+
+      <section id="status" class="status-bar" hidden></section>
+
+      <section id="results" class="results" hidden>
+        <h2 id="resultsHeading"></h2>
+        <p class="fetched-at" id="fetchedAt"></p>
+        <div id="courtsGrid" class="courts-grid"></div>
+        <p class="note">
+          Availability data is fetched directly from the
+          <a
+            href="https://casantacruzweb.myvscloud.com/webtrac/web/search.html?search=yes&module=FR&location=LNCC"
+            target="_blank"
+            rel="noopener noreferrer"
+          >City of Santa Cruz WebTrac system</a>.
+          Click <strong>Open Booking Site</strong> to make a reservation.
+        </p>
+      </section>
+
+      <section id="fallback" class="fallback" hidden>
+        <div class="fallback-card">
+          <span class="fallback-icon">🔗</span>
+          <h2>View Court Availability</h2>
+          <p>
+            Check real-time volleyball court availability on the City of Santa Cruz
+            recreation booking site.
+          </p>
+          <a
+            href="https://casantacruzweb.myvscloud.com/webtrac/web/search.html?search=yes&module=FR&location=LNCC"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="btn-primary"
+          >
+            Open Booking Site ↗
+          </a>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <p>
+        Data sourced from the
+        <a
+          href="https://casantacruzweb.myvscloud.com/webtrac/web/search.html?search=yes&module=FR&location=LNCC"
+          target="_blank"
+          rel="noopener noreferrer"
+        >City of Santa Cruz WebTrac</a>
+        facility reservation system.
+      </p>
+    </footer>
+
+    <script src="app.js"></script>
+  </body>
+</html>

@@ -1,0 +1,174 @@
+/* ── Reset & base ─────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --brand: #1a6e38;
+  --brand-light: #e6f4ec;
+  --accent: #f5a623;
+  --text: #1c1c1e;
+  --muted: #6c757d;
+  --bg: #f7f9fc;
+  --card-bg: #ffffff;
+  --border: #dde3ea;
+  --radius: 12px;
+  --shadow: 0 2px 12px rgba(0,0,0,0.08);
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Header ───────────────────────────────────────────────────── */
+header {
+  background: var(--brand);
+  color: #fff;
+  padding: 1.5rem 2rem;
+}
+
+.header-content {
+  max-width: 900px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.volleyball-icon { font-size: 2.5rem; flex-shrink: 0; }
+
+h1 { font-size: 1.6rem; font-weight: 700; }
+
+.subtitle { font-size: 0.9rem; opacity: 0.85; margin-top: 0.2rem; }
+
+/* ── Main content ─────────────────────────────────────────────── */
+main {
+  flex: 1;
+  max-width: 900px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+/* ── Controls ─────────────────────────────────────────────────── */
+.controls {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+}
+
+.btn-primary, .btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.65rem 1.4rem;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  border: 2px solid transparent;
+  transition: background 0.15s, transform 0.1s;
+}
+
+.btn-primary {
+  background: var(--brand);
+  color: #fff;
+  border-color: var(--brand);
+}
+.btn-primary:hover { background: #155a2d; }
+.btn-primary:active { transform: scale(0.97); }
+
+.btn-secondary {
+  background: transparent;
+  color: var(--brand);
+  border-color: var(--brand);
+}
+.btn-secondary:hover { background: var(--brand-light); }
+
+button.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ── Status bar ───────────────────────────────────────────────── */
+.status-bar {
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius);
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
+.status-bar.loading { background: #e8f0fe; color: #174ea6; }
+.status-bar.error   { background: #fce8e6; color: #c5221f; }
+
+/* ── Results section ──────────────────────────────────────────── */
+.results h2 { font-size: 1.2rem; margin-bottom: 0.25rem; }
+.fetched-at { font-size: 0.8rem; color: var(--muted); margin-bottom: 1.25rem; }
+
+.courts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.court-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem 1.25rem;
+  box-shadow: var(--shadow);
+}
+
+.court-name { font-weight: 600; margin-bottom: 0.35rem; }
+
+.court-status {
+  display: inline-block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+}
+
+.court-status.available  { background: #d4edda; color: #155724; }
+.court-status.unavailable { background: #f8d7da; color: #721c24; }
+.court-status.unknown    { background: #fff3cd; color: #856404; }
+
+.note {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-top: 0.5rem;
+}
+.note a { color: var(--brand); }
+
+/* ── Fallback card ────────────────────────────────────────────── */
+.fallback { display: flex; justify-content: center; }
+
+.fallback-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 2.5rem 2rem;
+  text-align: center;
+  max-width: 460px;
+  width: 100%;
+}
+
+.fallback-icon { font-size: 3rem; display: block; margin-bottom: 1rem; }
+.fallback-card h2 { margin-bottom: 0.75rem; }
+.fallback-card p { color: var(--muted); margin-bottom: 1.5rem; line-height: 1.6; }
+
+/* ── Footer ───────────────────────────────────────────────────── */
+footer {
+  text-align: center;
+  padding: 1.25rem 1rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+  border-top: 1px solid var(--border);
+}
+footer a { color: var(--brand); }

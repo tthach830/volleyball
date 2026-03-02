@@ -1,0 +1,27 @@
+{
+  "name": "volleyball",
+  "version": "1.0.0",
+  "description": "Santa Cruz volleyball courts availability checker",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test test/server.test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tthach830/volleyball.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/tthach830/volleyball/issues"
+  },
+  "homepage": "https://github.com/tthach830/volleyball#readme",
+  "dependencies": {
+    "cheerio": "^1.2.0",
+    "express": "^5.2.1",
+    "node-fetch": "^2.7.0"
+  }
+}
