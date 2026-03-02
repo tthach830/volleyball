@@ -149,15 +149,28 @@
 
         @media (max-width: 768px) {
             h1 {
-                font-size: 2rem;
+                font-size: 1.8rem;
+            }
+
+            .container {
+                gap: 1rem;
             }
 
             .glass-panel {
-                padding: 1rem;
+                padding: 0.5rem;
+                height: 60vh;
+                min-height: 450px;
+                border-radius: 12px;
             }
 
             body {
-                padding: 1rem 0.5rem;
+                padding: 1rem 0;
+                /* Remove horizontal padding to maximize space */
+            }
+
+            .iframe-wrapper {
+                margin: 0;
+                height: 100%;
             }
         }
     </style>
