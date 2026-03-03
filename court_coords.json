@@ -1,0 +1,92 @@
+[
+    {
+        "court": "Main Beach Volleyball Court 01",
+        "x": 124,
+        "y": 538
+    },
+    {
+        "court": "Main Beach Volleyball Court 02",
+        "x": 185,
+        "y": 648
+    },
+    {
+        "court": "Main Beach Volleyball Court 03",
+        "x": 236,
+        "y": 749
+    },
+    {
+        "court": "Main Beach Volleyball Court 04",
+        "x": 317,
+        "y": 438
+    },
+    {
+        "court": "Main Beach Volleyball Court 05",
+        "x": 377,
+        "y": 546
+    },
+    {
+        "court": "Main Beach Volleyball Court 06",
+        "x": 428,
+        "y": 654
+    },
+    {
+        "court": "Main Beach Volleyball Court 07",
+        "x": 509,
+        "y": 334
+    },
+    {
+        "court": "Main Beach Volleyball Court 08",
+        "x": 567,
+        "y": 445
+    },
+    {
+        "court": "Main Beach Volleyball Court 09",
+        "x": 619,
+        "y": 558
+    },
+    {
+        "court": "Main Beach Volleyball Court 10",
+        "x": 713,
+        "y": 231
+    },
+    {
+        "court": "Main Beach Volleyball Court 11",
+        "x": 717,
+        "y": 371
+    },
+    {
+        "court": "Main Beach Volleyball Court 12",
+        "x": 819,
+        "y": 449
+    },
+    {
+        "court": "Main Beach Volleyball Court 13",
+        "x": 916,
+        "y": 140
+    },
+    {
+        "court": "Main Beach Volleyball Court 14",
+        "x": 964,
+        "y": 246
+    },
+    {
+        "court": "Main Beach Volleyball Court 15",
+        "x": 1019,
+        "y": 360
+    },
+    {
+        "court": "Main Beach Volleyball Court 16",
+        "x": 1109,
+        "y": 42
+    },
+    {
+        "court": "Main Beach Volleyball Court 17",
+        "x": 1166,
+        "y": 151
+    },
+    {
+        "court": "Main Beach Volleyball Court 18",
+        "x": 1190,
+        "y": 269
+    }
+]
