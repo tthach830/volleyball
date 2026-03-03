@@ -179,6 +179,90 @@
                 height: 100%;
             }
         }
+
+        /* Passcode Modal Styles */
+        #passcode-modal {
+            display: none;
+            position: fixed;
+            z-index: 9999;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(8px);
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .modal-content {
+            background: var(--card-bg);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 2.5rem;
+            border-radius: 20px;
+            text-align: center;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-content h3 {
+            margin-bottom: 1.5rem;
+            font-size: 1.5rem;
+            background: linear-gradient(135deg, #e0f2fe 0%, #38bdf8 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .modal-content input {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 1.5rem;
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: white;
+            text-align: center;
+            font-size: 1.1rem;
+            outline: none;
+        }
+
+        .modal-content input:focus {
+            border-color: var(--accent-color);
+        }
+
+        .modal-content button {
+            background: var(--accent-color);
+            color: var(--bg-color);
+            border: none;
+            padding: 10px 25px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .modal-content button:hover {
+            background: var(--accent-hover);
+            transform: translateY(-2px);
+        }
+
+        #logout-link {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.8rem;
+            margin-top: 1rem;
+            display: inline-block;
+            opacity: 0.5;
+            transition: opacity 0.2s;
+        }
+
+        #logout-link:hover {
+            opacity: 1;
+            text-decoration: underline;
+        }
     </style>
 </head>
 
@@ -228,553 +312,615 @@
 
         <footer>
             &copy; 2026 Volleyball Court Scraper &bull; Auto-updated daily
+            <br>
+            <a href="#" id="logout-link" onclick="resetAuth()">Reset Session</a>
         </footer>
-    </div>
 
-    <style>
-        /* Table Styles */
-        #data-table th,
-        #data-table td {
-            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-            border-right: 1px solid rgba(255, 255, 255, 0.2);
-            padding: 10px;
-            text-align: center;
-            white-space: nowrap;
-        }
+        <!-- Passcode Modal -->
+        <div id="passcode-modal">
+            <div class="modal-content">
+                <h3>Enter Passcode</h3>
+                <p style="color: var(--text-secondary); margin-bottom: 1rem; font-size: 0.9rem;">To toggle court
+                    availability, please enter the authorized passcode.</p>
+                <input type="password" id="passcode-input" placeholder="••••••••">
+                <div style="display: flex; gap: 10px; justify-content: center;">
+                    <button id="cancel-passcode"
+                        style="background: rgba(255,255,255,0.1); color: white;">Cancel</button>
+                    <button id="submit-passcode">Access</button>
+                </div>
+                <p id="passcode-error" style="color: #ef4444; font-size: 0.8rem; margin-top: 1rem; display: none;">
+                    Incorrect passcode. Please try again.</p>
+            </div>
+        </div>
 
-        #data-table th:first-child,
-        #data-table td:first-child {
-            border-left: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        #data-table tr:first-child th {
-            border-top: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        #data-table th {
-            font-weight: 600;
-            position: sticky;
-            top: 0;
-            background-color: #1e293b;
-            /* Fully opaque background */
-            z-index: 10;
-        }
-
-        .court-name {
-            font-weight: 600;
-            text-align: left !important;
-            position: sticky;
-            left: 0;
-            background-color: #1e293b;
-            /* Fully opaque background */
-            z-index: 5;
-            cursor: pointer;
-            transition: all 0.2s;
-            /* Auto-width */
-            white-space: nowrap;
-        }
-
-        .court-name:hover {
-            background-color: rgba(255, 255, 255, 0.1);
-        }
-
-        /* Second sticky column for LastUpdated */
-        .last-updated-col {
-            position: sticky;
-            /* left offset will be dynamically calculated in JS */
-            background-color: #1e293b;
-            z-index: 5;
-            font-size: 8px;
-            color: var(--text-secondary);
-        }
-
-        /* The top-left corner cell needs the highest z-index to stay above both row and col scrolls */
-        #data-table th.court-name-head {
-            z-index: 15;
-            left: 0;
-            position: sticky;
-            white-space: nowrap;
-        }
-
-        #data-table th.last-updated-head {
-            z-index: 15;
-            /* left offset dynamically calculated */
-            position: sticky;
-            font-size: 8px;
-        }
-
-        .status-cell {
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .status-cell:hover:not(.unavailable) {
-            background-color: rgba(255, 255, 255, 0.1);
-        }
-
-        .unavailable {
-            background-color: rgba(239, 68, 68, 0.8) !important;
-            color: white;
-            cursor: not-allowed;
-        }
-
-        .updating {
-            opacity: 0.5;
-            cursor: wait;
-        }
-    </style>
-
-    <script>
-        // Public Google Apps Script API URL
-        const GOOGLE_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz_fi2eIOPsvje45u3hMj5aqu9FOcKJ9vl2mlC_s3LjTQr3DfzyoISBOp0cShnH1kRoPQ/exec";
-
-        let currentTableData = [];
-        let timeSlots = [];
-        let timestampColIndex = -1;
-
-        const courtCoords = [
-            { "court": "Main 01", "x": 124, "y": 538 },
-            { "court": "Main 02", "x": 185, "y": 648 },
-            { "court": "Main 03", "x": 236, "y": 749 },
-            { "court": "Main 04", "x": 317, "y": 438 },
-            { "court": "Main 05", "x": 377, "y": 546 },
-            { "court": "Main 06", "x": 428, "y": 654 },
-            { "court": "Main 07", "x": 509, "y": 334 },
-            { "court": "Main 08", "x": 567, "y": 445 },
-            { "court": "Main 09", "x": 619, "y": 558 },
-            { "court": "Main 10", "x": 713, "y": 231 },
-            { "court": "Main 11", "x": 717, "y": 371 },
-            { "court": "Main 12", "x": 819, "y": 449 },
-            { "court": "Main 13", "x": 916, "y": 140 },
-            { "court": "Main 14", "x": 964, "y": 246 },
-            { "court": "Main 15", "x": 1019, "y": 360 },
-            { "court": "Main 16", "x": 1109, "y": 42 },
-            { "court": "Main 17", "x": 1166, "y": 151 },
-            { "court": "Main 18", "x": 1190, "y": 269 }
-        ];
-
-        function resizeMap() {
-            const wrapper = document.getElementById('map-wrapper');
-            const scaleContainer = document.getElementById('map-scale-container');
-            if (wrapper && scaleContainer) {
-                const scale = wrapper.clientWidth / 1200;
-                scaleContainer.style.transform = `scale(${scale})`;
-                // Set wrapper height to match scaled map exactly 
-                wrapper.style.height = `${800 * scale}px`;
-            }
-        }
-        window.addEventListener('resize', resizeMap);
-
-        async function loadTableData() {
-            try {
-                // Fetch the data from the Google Apps Script Web App JSON endpoint
-                // We use standard fetch now but grab JSON to avoid the CSV CORS issue
-                const response = await fetch(GOOGLE_APPS_SCRIPT_URL);
-                const result = await response.json();
-
-                if (result.status === "success") {
-                    renderTableData(result.data, result.lastUpdated);
-
-                    if (result.lastUpdated) {
-                        const updateText = document.getElementById('last-updated-text');
-                        if (updateText) updateText.innerText = result.lastUpdated;
-                    }
-                } else {
-                    document.getElementById('loading-text').innerText = "API Error: " + result.message;
-                }
-            } catch (error) {
-                document.getElementById('loading-text').innerText = "Error loading data. Make sure the Web App is deployed and accessible to 'Anyone'.";
-                console.error("Error fetching data:", error);
-            }
-        }
-
-        function renderTableData(rows, globalLastUpdated) {
-            currentTableData = rows;
-            const thead = document.getElementById('table-head');
-            const tbody = document.getElementById('table-body');
-
-            thead.innerHTML = '';
-            tbody.innerHTML = '';
-
-            let allHeaders = rows[0].map(c => String(c).trim());
-
-            // Look for "LastUpdated" or "Timestamp" column
-            timestampColIndex = -1;
-            for (let i = 1; i < allHeaders.length; i++) {
-                let hLower = allHeaders[i].toLowerCase();
-                if (hLower === "lastupdated" || hLower === "timestamp") {
-                    timestampColIndex = i;
-                    break;
-                }
+        <style>
+            /* Table Styles */
+            #data-table th,
+            #data-table td {
+                border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+                border-right: 1px solid rgba(255, 255, 255, 0.2);
+                padding: 10px;
+                text-align: center;
+                white-space: nowrap;
             }
 
-            // Extract timeslots (exclude court name and timestamp column)
-            timeSlots = [];
-            for (let i = 1; i < allHeaders.length; i++) {
-                if (i !== timestampColIndex) {
-                    timeSlots.push(allHeaders[i]);
-                }
+            #data-table th:first-child,
+            #data-table td:first-child {
+                border-left: 1px solid rgba(255, 255, 255, 0.2);
             }
 
-            // Helper to get current hour string (e.g. "5:00 pm - 6:00 pm")
-            const now = new Date();
-            let h = now.getHours();
-            let am = h < 12 ? 'am' : 'pm';
-            let hour1 = h % 12 || 12;
-            let nextH = h + 1;
-            let nextAm = nextH < 12 || nextH >= 24 ? 'am' : 'pm';
-            let hour2 = nextH % 12 || 12;
-            const currentSlotName = `${hour1}:00 ${am} - ${hour2}:00 ${nextAm}`.toLowerCase();
+            #data-table tr:first-child th {
+                border-top: 1px solid rgba(255, 255, 255, 0.2);
+            }
 
-            // Find which array index corresponds to the current hour slot
-            let currentSlotIndex = timeSlots.findIndex(s => s.toLowerCase() === currentSlotName);
-            if (currentSlotIndex === -1) currentSlotIndex = 0; // fallback if current hour is not in sheet
+            #data-table th {
+                font-weight: 600;
+                position: sticky;
+                top: 0;
+                background-color: #1e293b;
+                /* Fully opaque background */
+                z-index: 10;
+            }
 
-            // Shift time slots so current slot is first
-            const shiftedTimeSlots = [
-                ...timeSlots.slice(currentSlotIndex),
-                ...timeSlots.slice(0, currentSlotIndex)
+            .court-name {
+                font-weight: 600;
+                text-align: left !important;
+                position: sticky;
+                left: 0;
+                background-color: #1e293b;
+                /* Fully opaque background */
+                z-index: 5;
+                cursor: pointer;
+                transition: all 0.2s;
+                /* Auto-width */
+                white-space: nowrap;
+            }
+
+            .court-name:hover {
+                background-color: rgba(255, 255, 255, 0.1);
+            }
+
+            /* Second sticky column for LastUpdated */
+            .last-updated-col {
+                position: sticky;
+                /* left offset will be dynamically calculated in JS */
+                background-color: #1e293b;
+                z-index: 5;
+                font-size: 8px;
+                color: var(--text-secondary);
+            }
+
+            /* The top-left corner cell needs the highest z-index to stay above both row and col scrolls */
+            #data-table th.court-name-head {
+                z-index: 15;
+                left: 0;
+                position: sticky;
+                white-space: nowrap;
+            }
+
+            #data-table th.last-updated-head {
+                z-index: 15;
+                /* left offset dynamically calculated */
+                position: sticky;
+                font-size: 8px;
+            }
+
+            .status-cell {
+                cursor: pointer;
+                transition: all 0.2s;
+            }
+
+            .status-cell:hover:not(.unavailable) {
+                background-color: rgba(255, 255, 255, 0.1);
+            }
+
+            .unavailable {
+                background-color: rgba(239, 68, 68, 0.8) !important;
+                color: white;
+                cursor: not-allowed;
+            }
+
+            .updating {
+                opacity: 0.5;
+                cursor: wait;
+            }
+        </style>
+
+        <script>
+            // Public Google Apps Script API URL
+            const GOOGLE_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz_fi2eIOPsvje45u3hMj5aqu9FOcKJ9vl2mlC_s3LjTQr3DfzyoISBOp0cShnH1kRoPQ/exec";
+
+            let currentTableData = [];
+            let timeSlots = [];
+            let timestampColIndex = -1;
+
+            const courtCoords = [
+                { "court": "Main 01", "x": 124, "y": 538 },
+                { "court": "Main 02", "x": 185, "y": 648 },
+                { "court": "Main 03", "x": 236, "y": 749 },
+                { "court": "Main 04", "x": 317, "y": 438 },
+                { "court": "Main 05", "x": 377, "y": 546 },
+                { "court": "Main 06", "x": 428, "y": 654 },
+                { "court": "Main 07", "x": 509, "y": 334 },
+                { "court": "Main 08", "x": 567, "y": 445 },
+                { "court": "Main 09", "x": 619, "y": 558 },
+                { "court": "Main 10", "x": 713, "y": 231 },
+                { "court": "Main 11", "x": 717, "y": 371 },
+                { "court": "Main 12", "x": 819, "y": 449 },
+                { "court": "Main 13", "x": 916, "y": 140 },
+                { "court": "Main 14", "x": 964, "y": 246 },
+                { "court": "Main 15", "x": 1019, "y": 360 },
+                { "court": "Main 16", "x": 1109, "y": 42 },
+                { "court": "Main 17", "x": 1166, "y": 151 },
+                { "court": "Main 18", "x": 1190, "y": 269 }
             ];
 
-            // Render Header (Row 0)
-            const headerRow = document.createElement('tr');
-
-            // 1. Add Court Column Header
-            const thCourt = document.createElement('th');
-            thCourt.innerText = "Court";
-            thCourt.className = 'court-name-head';
-            headerRow.appendChild(thCourt);
-
-            // 2. Add LastUpdated Column Header
-            const thTimestamp = document.createElement('th');
-            thTimestamp.innerText = "LastUpdated";
-            thTimestamp.className = 'last-updated-head';
-            headerRow.appendChild(thTimestamp);
-
-            // 3. Add Shifted Time Slot Headers
-            shiftedTimeSlots.forEach(slot => {
-                const th = document.createElement('th');
-                th.innerText = slot;
-                headerRow.appendChild(th);
-            });
-            thead.appendChild(headerRow);
-
-            // Render Body (Rows 1+)
-            for (let i = 1; i < rows.length; i++) {
-                if (rows[i].length < 2 || !rows[i][0]) continue; // Skip empty rows
-
-                const tr = document.createElement('tr');
-                const courtName = String(rows[i][0]).trim();
-
-                // Track the td element corresponding to the current hour for this row
-                let currentHourTdElement = null;
-
-                // 1. First column: Court Name
-                const tdName = document.createElement('td');
-                tdName.className = 'court-name';
-                tdName.innerText = courtName;
-                tdName.title = `Toggle ${courtName} availability for current hour`;
-                tr.appendChild(tdName);
-
-                // 2. Second column: LastUpdated
-                const tdTimestamp = document.createElement('td');
-                tdTimestamp.className = 'last-updated-col';
-                if (timestampColIndex !== -1 && rows[i][timestampColIndex]) {
-                    tdTimestamp.innerText = String(rows[i][timestampColIndex]).trim();
-                } else {
-                    tdTimestamp.innerText = globalLastUpdated || "-";
+            function resizeMap() {
+                const wrapper = document.getElementById('map-wrapper');
+                const scaleContainer = document.getElementById('map-scale-container');
+                if (wrapper && scaleContainer) {
+                    const scale = wrapper.clientWidth / 1200;
+                    scaleContainer.style.transform = `scale(${scale})`;
+                    // Set wrapper height to match scaled map exactly 
+                    wrapper.style.height = `${800 * scale}px`;
                 }
-                tr.appendChild(tdTimestamp);
+            }
+            window.addEventListener('resize', resizeMap);
 
-                // Extract all data columns for this row (excluding Court Name and Timestamp)
-                const rowData = [];
-                for (let k = 1; k < rows[i].length; k++) {
-                    if (k !== timestampColIndex) {
-                        rowData.push(rows[i][k]);
+            async function loadTableData() {
+                try {
+                    // Fetch the data from the Google Apps Script Web App JSON endpoint
+                    // We use standard fetch now but grab JSON to avoid the CSV CORS issue
+                    const response = await fetch(GOOGLE_APPS_SCRIPT_URL);
+                    const result = await response.json();
+
+                    if (result.status === "success") {
+                        renderTableData(result.data, result.lastUpdated);
+
+                        if (result.lastUpdated) {
+                            const updateText = document.getElementById('last-updated-text');
+                            if (updateText) updateText.innerText = result.lastUpdated;
+                        }
+                    } else {
+                        document.getElementById('loading-text').innerText = "API Error: " + result.message;
+                    }
+                } catch (error) {
+                    document.getElementById('loading-text').innerText = "Error loading data. Make sure the Web App is deployed and accessible to 'Anyone'.";
+                    console.error("Error fetching data:", error);
+                }
+            }
+
+            function renderTableData(rows, globalLastUpdated) {
+                currentTableData = rows;
+                const thead = document.getElementById('table-head');
+                const tbody = document.getElementById('table-body');
+
+                thead.innerHTML = '';
+                tbody.innerHTML = '';
+
+                let allHeaders = rows[0].map(c => String(c).trim());
+
+                // Look for "LastUpdated" or "Timestamp" column
+                timestampColIndex = -1;
+                for (let i = 1; i < allHeaders.length; i++) {
+                    let hLower = allHeaders[i].toLowerCase();
+                    if (hLower === "lastupdated" || hLower === "timestamp") {
+                        timestampColIndex = i;
+                        break;
                     }
                 }
 
-                // Pad with empty if needed
-                while (rowData.length < timeSlots.length) {
-                    rowData.push("");
+                // Extract timeslots (exclude court name and timestamp column)
+                timeSlots = [];
+                for (let i = 1; i < allHeaders.length; i++) {
+                    if (i !== timestampColIndex) {
+                        timeSlots.push(allHeaders[i]);
+                    }
                 }
 
-                // Shift data columns to match the shifted time slots
-                const shiftedData = [
-                    ...rowData.slice(currentSlotIndex),
-                    ...rowData.slice(0, currentSlotIndex)
+                // Helper to get current hour string (e.g. "5:00 pm - 6:00 pm")
+                const now = new Date();
+                let h = now.getHours();
+                let am = h < 12 ? 'am' : 'pm';
+                let hour1 = h % 12 || 12;
+                let nextH = h + 1;
+                let nextAm = nextH < 12 || nextH >= 24 ? 'am' : 'pm';
+                let hour2 = nextH % 12 || 12;
+                const currentSlotName = `${hour1}:00 ${am} - ${hour2}:00 ${nextAm}`.toLowerCase();
+
+                // Find which array index corresponds to the current hour slot
+                let currentSlotIndex = timeSlots.findIndex(s => s.toLowerCase() === currentSlotName);
+                if (currentSlotIndex === -1) currentSlotIndex = 0; // fallback if current hour is not in sheet
+
+                // Shift time slots so current slot is first
+                const shiftedTimeSlots = [
+                    ...timeSlots.slice(currentSlotIndex),
+                    ...timeSlots.slice(0, currentSlotIndex)
                 ];
 
-                // 3. Data columns
-                shiftedData.forEach((statusVal, index) => {
-                    const td = document.createElement('td');
-                    td.className = 'status-cell';
-                    const status = String(statusVal).trim();
-                    td.innerText = status;
+                // Render Header (Row 0)
+                const headerRow = document.createElement('tr');
 
-                    if (status.toLowerCase().includes('unavailable')) {
-                        td.classList.add('unavailable');
-                    }
+                // 1. Add Court Column Header
+                const thCourt = document.createElement('th');
+                thCourt.innerText = "Court";
+                thCourt.className = 'court-name-head';
+                headerRow.appendChild(thCourt);
 
-                    // The *first* data column (index 0 in shifted array) is always the current hour slot
-                    if (index === 0) {
-                        currentHourTdElement = td;
-                    }
+                // 2. Add LastUpdated Column Header
+                const thTimestamp = document.createElement('th');
+                thTimestamp.innerText = "LastUpdated";
+                thTimestamp.className = 'last-updated-head';
+                headerRow.appendChild(thTimestamp);
 
-                    // Make ALL data cells clickable to toggle their status
-                    const timeSlotName = shiftedTimeSlots[index];
-                    td.addEventListener('click', () => handleCellClick(td, courtName, timeSlotName));
-                    tr.appendChild(td);
+                // 3. Add Shifted Time Slot Headers
+                shiftedTimeSlots.forEach(slot => {
+                    const th = document.createElement('th');
+                    th.innerText = slot;
+                    headerRow.appendChild(th);
                 });
+                thead.appendChild(headerRow);
 
-                // Add click listener to the court name to toggle its current hour cell
-                tdName.addEventListener('click', () => {
-                    if (currentHourTdElement) {
-                        // Pass the current slot name from shiftedTimeSlots[0]
-                        handleCellClick(currentHourTdElement, courtName, shiftedTimeSlots[0]);
+                // Render Body (Rows 1+)
+                for (let i = 1; i < rows.length; i++) {
+                    if (rows[i].length < 2 || !rows[i][0]) continue; // Skip empty rows
+
+                    const tr = document.createElement('tr');
+                    const courtName = String(rows[i][0]).trim();
+
+                    // Track the td element corresponding to the current hour for this row
+                    let currentHourTdElement = null;
+
+                    // 1. First column: Court Name
+                    const tdName = document.createElement('td');
+                    tdName.className = 'court-name';
+                    tdName.innerText = courtName;
+                    tdName.title = `Toggle ${courtName} availability for current hour`;
+                    tr.appendChild(tdName);
+
+                    // 2. Second column: LastUpdated
+                    const tdTimestamp = document.createElement('td');
+                    tdTimestamp.className = 'last-updated-col';
+                    if (timestampColIndex !== -1 && rows[i][timestampColIndex]) {
+                        tdTimestamp.innerText = String(rows[i][timestampColIndex]).trim();
                     } else {
-                        alert("Current hour slot is not available in the table.");
+                        tdTimestamp.innerText = globalLastUpdated || "-";
                     }
-                });
+                    tr.appendChild(tdTimestamp);
 
-                tbody.appendChild(tr);
-            }
-
-            // Sync the sticky offset for the 2nd column based on the auto-width 1st column
-            // Need a small timeout to let the browser compute the width
-            setTimeout(() => {
-                const firstColHeader = document.querySelector('#data-table th.court-name-head');
-                if (firstColHeader) {
-                    const offsetWidth = firstColHeader.offsetWidth;
-                    document.querySelectorAll('.last-updated-head, .last-updated-col').forEach(el => {
-                        el.style.left = offsetWidth + 'px';
-                    });
-                }
-            }, 10);
-
-            document.getElementById('loading-text').style.display = 'none';
-            document.getElementById('data-table').style.display = 'table';
-
-            // Draw Interactive Map Overlay
-            updateMap();
-        }
-
-        function updateMap() {
-            const dotsContainer = document.getElementById('map-dots-container');
-            if (!dotsContainer) return;
-            dotsContainer.innerHTML = '';
-
-            const now = new Date();
-            let h = now.getHours();
-            let am = h < 12 ? 'am' : 'pm';
-            let hour1 = h % 12 || 12;
-
-            let nextH = h + 1;
-            let nextAm = nextH < 12 || nextH >= 24 ? 'am' : 'pm';
-            let hour2 = nextH % 12 || 12;
-
-            // Generate the current slot name and normalize it by removing ":00"
-            const rawCurrentSlotName = `${hour1}:00 ${am} - ${hour2}:00 ${nextAm}`.toLowerCase();
-            const currentSlotName = rawCurrentSlotName.replace(/:00/g, "");
-
-            // Update the display text for the map legend
-            const hourTextEl = document.getElementById('current-hour-text');
-            if (hourTextEl) hourTextEl.innerText = `${hour1}:00 ${am.toUpperCase()} - ${hour2}:00 ${nextAm.toUpperCase()}`;
-
-            const availabilityMap = {};
-            if (currentTableData && currentTableData.length > 0) {
-                // Find all active header index offsets for timeSlots.
-                // headers are Court [0], LastUpdated (optional), Timeslots...
-                let dataOffsets = [];
-                for (let j = 1; j < currentTableData[0].length; j++) {
-                    if (j === timestampColIndex) continue;
-                    dataOffsets.push({ dataIndex: j, slotName: String(currentTableData[0][j]).trim().toLowerCase().replace(/:00/g, "") });
-                }
-
-                for (let i = 1; i < currentTableData.length; i++) {
-                    if (currentTableData[i].length < 2 || !currentTableData[i][0]) continue;
-                    const courtName = String(currentTableData[i][0]).trim();
-                    let isAvailable = true;
-
-                    for (let slotData of dataOffsets) {
-                        const status = String(currentTableData[i][slotData.dataIndex]).trim().toLowerCase();
-                        if (slotData.slotName === currentSlotName && status.includes('unavailable')) {
-                            isAvailable = false;
-                            break;
+                    // Extract all data columns for this row (excluding Court Name and Timestamp)
+                    const rowData = [];
+                    for (let k = 1; k < rows[i].length; k++) {
+                        if (k !== timestampColIndex) {
+                            rowData.push(rows[i][k]);
                         }
                     }
-                    availabilityMap[courtName] = isAvailable;
-                }
-            }
 
-            courtCoords.forEach(c => {
-                const isAvail = availabilityMap[c.court] !== false; // defaults to true
-                const dot = document.createElement('div');
-                const r = 25;
-                dot.style.position = 'absolute';
-                dot.style.left = `${c.x - r}px`;
-                dot.style.top = `${c.y - r}px`;
-                dot.style.width = `${r * 2}px`;
-                dot.style.height = `${r * 2}px`;
-                dot.style.borderRadius = '50%';
-                dot.style.backgroundColor = isAvail ? 'rgba(0, 255, 0, 0.6)' : 'rgba(239, 68, 68, 0.8)'; // darker red matching UI
-                dot.style.border = '2px solid black';
-                dot.style.pointerEvents = 'none';
-
-                const label = document.createElement('div');
-                label.innerText = `Court ${c.court.split(' ').pop().replace(/^0/, '')}`;
-                label.style.position = 'absolute';
-                label.style.left = `${c.x}px`;
-                label.style.top = `${c.y + r + 5}px`;
-                label.style.transform = 'translateX(-50%)';
-                label.style.color = '#000';
-                label.style.fontWeight = 'bold';
-                label.style.fontSize = '20px';
-                label.style.fontFamily = 'Arial, sans-serif';
-                label.style.pointerEvents = 'none';
-                label.style.textShadow = '1px 1px 2px white, -1px -1px 2px white, 1px -1px 2px white, -1px 1px 2px white';
-
-                dotsContainer.appendChild(dot);
-                dotsContainer.appendChild(label);
-            });
-
-            resizeMap();
-        }
-
-        async function handleCellClick(tdElement, courtName, timeSlot) {
-            // If already updating, do nothing
-            if (tdElement.classList.contains('updating')) {
-                return;
-            }
-
-            // Determine what the NEW status should be based on current state
-            const isCurrentlyUnavailable = tdElement.classList.contains('unavailable');
-            const newStatus = isCurrentlyUnavailable ? "available" : "unavailable";
-            const actionText = isCurrentlyUnavailable ? "available" : "unavailable";
-
-            // Ask for confirmation (optional, but good for UX)
-            if (!confirm(`Mark ${courtName} as ${actionText} for ${timeSlot}?`)) {
-                return;
-            }
-
-            // Optimistic UI update
-            const originalText = tdElement.innerText;
-            tdElement.innerText = "updating...";
-            tdElement.classList.add('updating');
-
-            const tr = tdElement.parentElement;
-            const tdTimestamp = tr ? tr.querySelector('.last-updated-col') : null;
-            const originalTimestamp = tdTimestamp ? tdTimestamp.innerText : "";
-
-            if (tdTimestamp) {
-                tdTimestamp.innerText = "updating...";
-                tdTimestamp.classList.add('updating');
-            }
-
-            if (GOOGLE_APPS_SCRIPT_URL === "YOUR_WEB_APP_URL_HERE") {
-                alert("Please replace YOUR_WEB_APP_URL_HERE in the code with your actual Google Apps Script Web App URL first.");
-                tdElement.innerText = originalText;
-                tdElement.classList.remove('updating');
-                if (tdTimestamp) {
-                    tdTimestamp.innerText = originalTimestamp;
-                    tdTimestamp.classList.remove('updating');
-                }
-                return;
-            }
-
-            try {
-                // Send background request to Google Apps Script
-                const response = await fetch(GOOGLE_APPS_SCRIPT_URL, {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        courtName: courtName,
-                        timeSlot: timeSlot,
-                        newStatus: newStatus
-                    })
-                });
-
-                const result = await response.json();
-
-                if (result.status === "success") {
-                    // Permanently change UI to new status
-                    tdElement.innerText = newStatus;
-                    tdElement.classList.remove('updating');
-
-                    if (newStatus === "unavailable") {
-                        tdElement.classList.add('unavailable');
-                    } else {
-                        tdElement.classList.remove('unavailable');
+                    // Pad with empty if needed
+                    while (rowData.length < timeSlots.length) {
+                        rowData.push("");
                     }
 
-                    // Update state array and map
-                    for (let i = 1; i < currentTableData.length; i++) {
-                        if (String(currentTableData[i][0]).trim() === courtName) {
-                            // Find column index using original timeSlots array since it's already stripped of Court/LastUpdated
-                            const timeSlotIdx = timeSlots.indexOf(timeSlot);
-                            if (timeSlotIdx >= 0) {
-                                // Calculate actual colIdx in currentTableData.
-                                // It's Court (0) + [LastUpdated?] + TimeSlots
-                                // Find where the time slots start. They start after Court and LastUpdated (if present)
-                                let colOffset = 1;
-                                if (timestampColIndex !== -1) colOffset++;
+                    // Shift data columns to match the shifted time slots
+                    const shiftedData = [
+                        ...rowData.slice(currentSlotIndex),
+                        ...rowData.slice(0, currentSlotIndex)
+                    ];
 
-                                // But since currentTableData also includes the LastUpdated column (at index timestampColIndex),
-                                // it's safer to just search the row headers directly if possible, or use the offset logic.
-                                // Actually, let's just find the index from the first row of currentTableData
-                                const headerRow = currentTableData[0];
-                                let targetColIdx = -1;
-                                for (let k = 0; k < headerRow.length; k++) {
-                                    if (String(headerRow[k]).trim() === timeSlot) {
-                                        targetColIdx = k;
-                                        break;
+                    // 3. Data columns
+                    shiftedData.forEach((statusVal, index) => {
+                        const td = document.createElement('td');
+                        td.className = 'status-cell';
+                        const status = String(statusVal).trim();
+                        td.innerText = status;
+
+                        if (status.toLowerCase().includes('unavailable')) {
+                            td.classList.add('unavailable');
+                        }
+
+                        // The *first* data column (index 0 in shifted array) is always the current hour slot
+                        if (index === 0) {
+                            currentHourTdElement = td;
+                        }
+
+                        // Make ALL data cells clickable to toggle their status
+                        const timeSlotName = shiftedTimeSlots[index];
+                        td.addEventListener('click', () => handleCellClick(td, courtName, timeSlotName));
+                        tr.appendChild(td);
+                    });
+
+                    // Add click listener to the court name to toggle its current hour cell
+                    tdName.addEventListener('click', () => {
+                        if (currentHourTdElement) {
+                            // Pass the current slot name from shiftedTimeSlots[0]
+                            handleCellClick(currentHourTdElement, courtName, shiftedTimeSlots[0]);
+                        } else {
+                            alert("Current hour slot is not available in the table.");
+                        }
+                    });
+
+                    tbody.appendChild(tr);
+                }
+
+                // Sync the sticky offset for the 2nd column based on the auto-width 1st column
+                // Need a small timeout to let the browser compute the width
+                setTimeout(() => {
+                    const firstColHeader = document.querySelector('#data-table th.court-name-head');
+                    if (firstColHeader) {
+                        const offsetWidth = firstColHeader.offsetWidth;
+                        document.querySelectorAll('.last-updated-head, .last-updated-col').forEach(el => {
+                            el.style.left = offsetWidth + 'px';
+                        });
+                    }
+                }, 10);
+
+                document.getElementById('loading-text').style.display = 'none';
+                document.getElementById('data-table').style.display = 'table';
+
+                // Draw Interactive Map Overlay
+                updateMap();
+            }
+
+            function updateMap() {
+                const dotsContainer = document.getElementById('map-dots-container');
+                if (!dotsContainer) return;
+                dotsContainer.innerHTML = '';
+
+                const now = new Date();
+                let h = now.getHours();
+                let am = h < 12 ? 'am' : 'pm';
+                let hour1 = h % 12 || 12;
+
+                let nextH = h + 1;
+                let nextAm = nextH < 12 || nextH >= 24 ? 'am' : 'pm';
+                let hour2 = nextH % 12 || 12;
+
+                // Generate the current slot name and normalize it by removing ":00"
+                const rawCurrentSlotName = `${hour1}:00 ${am} - ${hour2}:00 ${nextAm}`.toLowerCase();
+                const currentSlotName = rawCurrentSlotName.replace(/:00/g, "");
+
+                // Update the display text for the map legend
+                const hourTextEl = document.getElementById('current-hour-text');
+                if (hourTextEl) hourTextEl.innerText = `${hour1}:00 ${am.toUpperCase()} - ${hour2}:00 ${nextAm.toUpperCase()}`;
+
+                const availabilityMap = {};
+                if (currentTableData && currentTableData.length > 0) {
+                    // Find all active header index offsets for timeSlots.
+                    // headers are Court [0], LastUpdated (optional), Timeslots...
+                    let dataOffsets = [];
+                    for (let j = 1; j < currentTableData[0].length; j++) {
+                        if (j === timestampColIndex) continue;
+                        dataOffsets.push({ dataIndex: j, slotName: String(currentTableData[0][j]).trim().toLowerCase().replace(/:00/g, "") });
+                    }
+
+                    for (let i = 1; i < currentTableData.length; i++) {
+                        if (currentTableData[i].length < 2 || !currentTableData[i][0]) continue;
+                        const courtName = String(currentTableData[i][0]).trim();
+                        let isAvailable = true;
+
+                        for (let slotData of dataOffsets) {
+                            const status = String(currentTableData[i][slotData.dataIndex]).trim().toLowerCase();
+                            if (slotData.slotName === currentSlotName && status.includes('unavailable')) {
+                                isAvailable = false;
+                                break;
+                            }
+                        }
+                        availabilityMap[courtName] = isAvailable;
+                    }
+                }
+
+                courtCoords.forEach(c => {
+                    const isAvail = availabilityMap[c.court] !== false; // defaults to true
+                    const dot = document.createElement('div');
+                    const r = 25;
+                    dot.style.position = 'absolute';
+                    dot.style.left = `${c.x - r}px`;
+                    dot.style.top = `${c.y - r}px`;
+                    dot.style.width = `${r * 2}px`;
+                    dot.style.height = `${r * 2}px`;
+                    dot.style.borderRadius = '50%';
+                    dot.style.backgroundColor = isAvail ? 'rgba(0, 255, 0, 0.6)' : 'rgba(239, 68, 68, 0.8)'; // darker red matching UI
+                    dot.style.border = '2px solid black';
+                    dot.style.pointerEvents = 'none';
+
+                    const label = document.createElement('div');
+                    label.innerText = `Court ${c.court.split(' ').pop().replace(/^0/, '')}`;
+                    label.style.position = 'absolute';
+                    label.style.left = `${c.x}px`;
+                    label.style.top = `${c.y + r + 5}px`;
+                    label.style.transform = 'translateX(-50%)';
+                    label.style.color = '#000';
+                    label.style.fontWeight = 'bold';
+                    label.style.fontSize = '20px';
+                    label.style.fontFamily = 'Arial, sans-serif';
+                    label.style.pointerEvents = 'none';
+                    label.style.textShadow = '1px 1px 2px white, -1px -1px 2px white, 1px -1px 2px white, -1px 1px 2px white';
+
+                    dotsContainer.appendChild(dot);
+                    dotsContainer.appendChild(label);
+                });
+
+                resizeMap();
+            }
+
+            async function handleCellClick(tdElement, courtName, timeSlot) {
+                // Check authentication first
+                if (!isAuthorized()) {
+                    showPasscodeModal(() => handleCellClick(tdElement, courtName, timeSlot));
+                    return;
+                }
+
+                // If already updating, do nothing
+                if (tdElement.classList.contains('updating')) {
+                    return;
+                }
+
+                // Determine what the NEW status should be based on current state
+                const isCurrentlyUnavailable = tdElement.classList.contains('unavailable');
+                const newStatus = isCurrentlyUnavailable ? "available" : "unavailable";
+                const actionText = isCurrentlyUnavailable ? "available" : "unavailable";
+
+                // Ask for confirmation (optional, but good for UX)
+                if (!confirm(`Mark ${courtName} as ${actionText} for ${timeSlot}?`)) {
+                    return;
+                }
+
+                // Optimistic UI update
+                const originalText = tdElement.innerText;
+                tdElement.innerText = "updating...";
+                tdElement.classList.add('updating');
+
+                const tr = tdElement.parentElement;
+                const tdTimestamp = tr ? tr.querySelector('.last-updated-col') : null;
+                const originalTimestamp = tdTimestamp ? tdTimestamp.innerText : "";
+
+                if (tdTimestamp) {
+                    tdTimestamp.innerText = "updating...";
+                    tdTimestamp.classList.add('updating');
+                }
+
+                if (GOOGLE_APPS_SCRIPT_URL === "YOUR_WEB_APP_URL_HERE") {
+                    alert("Please replace YOUR_WEB_APP_URL_HERE in the code with your actual Google Apps Script Web App URL first.");
+                    tdElement.innerText = originalText;
+                    tdElement.classList.remove('updating');
+                    if (tdTimestamp) {
+                        tdTimestamp.innerText = originalTimestamp;
+                        tdTimestamp.classList.remove('updating');
+                    }
+                    return;
+                }
+
+                try {
+                    // Send background request to Google Apps Script
+                    const response = await fetch(GOOGLE_APPS_SCRIPT_URL, {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            courtName: courtName,
+                            timeSlot: timeSlot,
+                            newStatus: newStatus
+                        })
+                    });
+
+                    const result = await response.json();
+
+                    if (result.status === "success") {
+                        // Permanently change UI to new status
+                        tdElement.innerText = newStatus;
+                        tdElement.classList.remove('updating');
+
+                        if (newStatus === "unavailable") {
+                            tdElement.classList.add('unavailable');
+                        } else {
+                            tdElement.classList.remove('unavailable');
+                        }
+
+                        // Update state array and map
+                        for (let i = 1; i < currentTableData.length; i++) {
+                            if (String(currentTableData[i][0]).trim() === courtName) {
+                                // Find column index using original timeSlots array since it's already stripped of Court/LastUpdated
+                                const timeSlotIdx = timeSlots.indexOf(timeSlot);
+                                if (timeSlotIdx >= 0) {
+                                    // Calculate actual colIdx in currentTableData.
+                                    // It's Court (0) + [LastUpdated?] + TimeSlots
+                                    // Find where the time slots start. They start after Court and LastUpdated (if present)
+                                    let colOffset = 1;
+                                    if (timestampColIndex !== -1) colOffset++;
+
+                                    // But since currentTableData also includes the LastUpdated column (at index timestampColIndex),
+                                    // it's safer to just search the row headers directly if possible, or use the offset logic.
+                                    // Actually, let's just find the index from the first row of currentTableData
+                                    const headerRow = currentTableData[0];
+                                    let targetColIdx = -1;
+                                    for (let k = 0; k < headerRow.length; k++) {
+                                        if (String(headerRow[k]).trim() === timeSlot) {
+                                            targetColIdx = k;
+                                            break;
+                                        }
+                                    }
+
+                                    if (targetColIdx !== -1) {
+                                        currentTableData[i][targetColIdx] = newStatus;
                                     }
                                 }
 
-                                if (targetColIdx !== -1) {
-                                    currentTableData[i][targetColIdx] = newStatus;
+                                if (timestampColIndex !== -1 && result.timestamp) {
+                                    currentTableData[i][timestampColIndex] = result.timestamp;
                                 }
+                                break;
                             }
-
-                            if (timestampColIndex !== -1 && result.timestamp) {
-                                currentTableData[i][timestampColIndex] = result.timestamp;
-                            }
-                            break;
                         }
+
+                        if (tdTimestamp) {
+                            if (result.timestamp) {
+                                tdTimestamp.innerText = result.timestamp;
+                            } else {
+                                // Fallback if the Google backend didn't provide a timestamp
+                                tdTimestamp.innerText = originalTimestamp;
+                                console.warn("Backend didn't return a timestamp. Is the Code.gs deployed?");
+                            }
+                            tdTimestamp.classList.remove('updating');
+                        }
+
+                        updateMap();
+
+                    } else {
+                        throw new Error(result.message);
                     }
 
+                } catch (error) {
+                    console.error("Update failed:", error);
+                    alert("Failed to update status. See console for details.");
+                    // Revert UI on failure
+                    tdElement.innerText = originalText;
+                    tdElement.classList.remove('updating');
                     if (tdTimestamp) {
-                        if (result.timestamp) {
-                            tdTimestamp.innerText = result.timestamp;
-                        } else {
-                            // Fallback if the Google backend didn't provide a timestamp
-                            tdTimestamp.innerText = originalTimestamp;
-                            console.warn("Backend didn't return a timestamp. Is the Code.gs deployed?");
-                        }
+                        tdTimestamp.innerText = originalTimestamp;
                         tdTimestamp.classList.remove('updating');
                     }
-
-                    updateMap();
-
-                } else {
-                    throw new Error(result.message);
-                }
-
-            } catch (error) {
-                console.error("Update failed:", error);
-                alert("Failed to update status. See console for details.");
-                // Revert UI on failure
-                tdElement.innerText = originalText;
-                tdElement.classList.remove('updating');
-                if (tdTimestamp) {
-                    tdTimestamp.innerText = originalTimestamp;
-                    tdTimestamp.classList.remove('updating');
                 }
             }
-        }
 
-        // Load data on page load
-        window.addEventListener('DOMContentLoaded', loadTableData);
-    </script>
+            function resetAuth() {
+                localStorage.removeItem('court_auth_token');
+                location.reload();
+            }
+
+            function isAuthorized() {
+                return localStorage.getItem('court_auth_token') === 'authorized_john316';
+            }
+
+            function showPasscodeModal(onSuccess) {
+                const modal = document.getElementById('passcode-modal');
+                const input = document.getElementById('passcode-input');
+                const submit = document.getElementById('submit-passcode');
+                const cancel = document.getElementById('cancel-passcode');
+                const error = document.getElementById('passcode-error');
+
+                modal.style.display = 'flex';
+                input.value = '';
+                input.focus();
+                error.style.display = 'none';
+
+                const handleAuth = () => {
+                    if (input.value === 'john316') {
+                        localStorage.setItem('court_auth_token', 'authorized_john316');
+                        modal.style.display = 'none';
+                        if (onSuccess) onSuccess();
+                    } else {
+                        error.style.display = 'block';
+                        input.value = '';
+                        input.focus();
+                    }
+                };
+
+                submit.onclick = handleAuth;
+                input.onkeypress = (e) => { if (e.key === 'Enter') handleAuth(); };
+                cancel.onclick = () => { modal.style.display = 'none'; };
+            }
+
+            // Load data on page load
+            window.addEventListener('DOMContentLoaded', loadTableData);
+        </script>
 
 </body>
 
