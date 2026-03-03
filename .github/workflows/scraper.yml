@@ -2,7 +2,7 @@ name: Daily Volleyball Scraper
 
 on:
   schedule:
-    # Runs at 15:00 UTC (7:00 AM PST) every day
+    # Runs at 15:00 UTC (1:00 AM PST) every day
     - cron: '0 15 * * *'
   workflow_dispatch:
     # Allows for manual triggering via the Actions tab
