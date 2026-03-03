@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Volleyball Court Availability</title>
+    <title>Santa Cruz Court Availability</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
 
@@ -15,6 +15,11 @@
             --text-secondary: #94a3b8;
             --accent-color: #38bdf8;
             --accent-hover: #0ea5e9;
+        }
+
+        html {
+            font-size: 14px;
+            /* Reduced from default 16px to shrink all rem units by ~2 points */
         }
 
         * {
@@ -181,9 +186,31 @@
 
     <div class="container">
         <header>
-            <h1>Volleyball Court Availability</h1>
+            <h1>Santa Cruz Court Availability</h1>
             <p class="subtitle">Live daily schedule updates</p>
         </header>
+
+        <main class="glass-panel" style="height: auto; min-height: 0;">
+            <h2 class="section-title">Court Status <span
+                    style="font-size: 0.9rem; font-weight: 400; color: var(--text-secondary);">(last update: <span
+                        id="last-updated-text">...</span>)</span></h2>
+            <p style="text-align: center; color: #fca5a5; font-size: 0.9rem; margin-top: -0.5rem; margin-bottom: 1rem;">
+                <span
+                    style="display: inline-block; width: 12px; height: 12px; background-color: #ef4444; border-radius: 50%; margin-right: 6px; vertical-align: middle;"></span>
+                Red = Unavailable for the Current Hour (<span id="current-hour-text"></span>)
+            </p>
+            <div class="iframe-wrapper" id="map-wrapper"
+                style="position: relative; overflow: hidden; background: #fff; border-radius: 8px; width: 100%; aspect-ratio: 1200 / 800;">
+                <!-- The map has a native resolution of 1200x800 -->
+                <div id="map-scale-container"
+                    style="position: absolute; top: 0; left: 0; transform-origin: top left; width: 1200px; height: 800px; z-index: 1;">
+                    <img src="./map.png" alt="Court Map"
+                        style="position: absolute; top: 0; left: 0; width: 1200px; height: 800px; object-fit: cover; z-index: 2;">
+                    <div id="map-dots-container"
+                        style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 3;"></div>
+                </div>
+            </div>
+        </main>
 
         <main class="glass-panel">
             <h2 class="section-title">Availability Table</h2>
@@ -196,26 +223,6 @@
                     <tbody id="table-body">
                     </tbody>
                 </table>
-            </div>
-        </main>
-
-        <main class="glass-panel">
-            <h2 class="section-title">Court Map</h2>
-            <p style="text-align: center; color: #fca5a5; font-size: 0.9rem; margin-top: -0.5rem; margin-bottom: 1rem;">
-                <span
-                    style="display: inline-block; width: 12px; height: 12px; background-color: #ef4444; border-radius: 50%; margin-right: 6px; vertical-align: middle;"></span>
-                Red = Unavailable for the Current Hour (<span id="current-hour-text"></span>)
-            </p>
-            <div class="iframe-wrapper" id="map-wrapper"
-                style="position: relative; overflow: hidden; background: #fff; border-radius: 8px;">
-                <!-- The map has a native resolution of 1200x800 -->
-                <div id="map-scale-container"
-                    style="position: absolute; top: 0; left: 0; transform-origin: top left; width: 1200px; height: 800px;">
-                    <img src="map.png" alt="Court Map"
-                        style="position: absolute; top: 0; left: 0; width: 1200px; height: 800px; object-fit: cover;">
-                    <div id="map-dots-container"
-                        style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></div>
-                </div>
             </div>
         </main>
 
@@ -232,6 +239,7 @@
             border-right: 1px solid rgba(255, 255, 255, 0.2);
             padding: 10px;
             text-align: center;
+            white-space: nowrap;
         }
 
         #data-table th:first-child,
@@ -260,12 +268,39 @@
             background-color: #1e293b;
             /* Fully opaque background */
             z-index: 5;
+            cursor: pointer;
+            transition: all 0.2s;
+            /* Auto-width */
+            white-space: nowrap;
+        }
+
+        .court-name:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        /* Second sticky column for LastUpdated */
+        .last-updated-col {
+            position: sticky;
+            /* left offset will be dynamically calculated in JS */
+            background-color: #1e293b;
+            z-index: 5;
+            font-size: 8px;
+            color: var(--text-secondary);
         }
 
         /* The top-left corner cell needs the highest z-index to stay above both row and col scrolls */
-        #data-table th:first-child {
+        #data-table th.court-name-head {
             z-index: 15;
             left: 0;
+            position: sticky;
+            white-space: nowrap;
+        }
+
+        #data-table th.last-updated-head {
+            z-index: 15;
+            /* left offset dynamically calculated */
+            position: sticky;
+            font-size: 8px;
         }
 
         .status-cell {
@@ -295,26 +330,27 @@
 
         let currentTableData = [];
         let timeSlots = [];
+        let timestampColIndex = -1;
 
         const courtCoords = [
-            { "court": "Main Beach Volleyball Court 01", "x": 124, "y": 538 },
-            { "court": "Main Beach Volleyball Court 02", "x": 185, "y": 648 },
-            { "court": "Main Beach Volleyball Court 03", "x": 236, "y": 749 },
-            { "court": "Main Beach Volleyball Court 04", "x": 317, "y": 438 },
-            { "court": "Main Beach Volleyball Court 05", "x": 377, "y": 546 },
-            { "court": "Main Beach Volleyball Court 06", "x": 428, "y": 654 },
-            { "court": "Main Beach Volleyball Court 07", "x": 509, "y": 334 },
-            { "court": "Main Beach Volleyball Court 08", "x": 567, "y": 445 },
-            { "court": "Main Beach Volleyball Court 09", "x": 619, "y": 558 },
-            { "court": "Main Beach Volleyball Court 10", "x": 713, "y": 231 },
-            { "court": "Main Beach Volleyball Court 11", "x": 717, "y": 371 },
-            { "court": "Main Beach Volleyball Court 12", "x": 819, "y": 449 },
-            { "court": "Main Beach Volleyball Court 13", "x": 916, "y": 140 },
-            { "court": "Main Beach Volleyball Court 14", "x": 964, "y": 246 },
-            { "court": "Main Beach Volleyball Court 15", "x": 1019, "y": 360 },
-            { "court": "Main Beach Volleyball Court 16", "x": 1109, "y": 42 },
-            { "court": "Main Beach Volleyball Court 17", "x": 1166, "y": 151 },
-            { "court": "Main Beach Volleyball Court 18", "x": 1190, "y": 269 }
+            { "court": "Main 01", "x": 124, "y": 538 },
+            { "court": "Main 02", "x": 185, "y": 648 },
+            { "court": "Main 03", "x": 236, "y": 749 },
+            { "court": "Main 04", "x": 317, "y": 438 },
+            { "court": "Main 05", "x": 377, "y": 546 },
+            { "court": "Main 06", "x": 428, "y": 654 },
+            { "court": "Main 07", "x": 509, "y": 334 },
+            { "court": "Main 08", "x": 567, "y": 445 },
+            { "court": "Main 09", "x": 619, "y": 558 },
+            { "court": "Main 10", "x": 713, "y": 231 },
+            { "court": "Main 11", "x": 717, "y": 371 },
+            { "court": "Main 12", "x": 819, "y": 449 },
+            { "court": "Main 13", "x": 916, "y": 140 },
+            { "court": "Main 14", "x": 964, "y": 246 },
+            { "court": "Main 15", "x": 1019, "y": 360 },
+            { "court": "Main 16", "x": 1109, "y": 42 },
+            { "court": "Main 17", "x": 1166, "y": 151 },
+            { "court": "Main 18", "x": 1190, "y": 269 }
         ];
 
         function resizeMap() {
@@ -337,7 +373,12 @@
                 const result = await response.json();
 
                 if (result.status === "success") {
-                    renderTableData(result.data);
+                    renderTableData(result.data, result.lastUpdated);
+
+                    if (result.lastUpdated) {
+                        const updateText = document.getElementById('last-updated-text');
+                        if (updateText) updateText.innerText = result.lastUpdated;
+                    }
                 } else {
                     document.getElementById('loading-text').innerText = "API Error: " + result.message;
                 }
@@ -347,7 +388,7 @@
             }
         }
 
-        function renderTableData(rows) {
+        function renderTableData(rows, globalLastUpdated) {
             currentTableData = rows;
             const thead = document.getElementById('table-head');
             const tbody = document.getElementById('table-body');
@@ -355,16 +396,68 @@
             thead.innerHTML = '';
             tbody.innerHTML = '';
 
+            let allHeaders = rows[0].map(c => String(c).trim());
+
+            // Look for "LastUpdated" or "Timestamp" column
+            timestampColIndex = -1;
+            for (let i = 1; i < allHeaders.length; i++) {
+                let hLower = allHeaders[i].toLowerCase();
+                if (hLower === "lastupdated" || hLower === "timestamp") {
+                    timestampColIndex = i;
+                    break;
+                }
+            }
+
+            // Extract timeslots (exclude court name and timestamp column)
+            timeSlots = [];
+            for (let i = 1; i < allHeaders.length; i++) {
+                if (i !== timestampColIndex) {
+                    timeSlots.push(allHeaders[i]);
+                }
+            }
+
+            // Helper to get current hour string (e.g. "5:00 pm - 6:00 pm")
+            const now = new Date();
+            let h = now.getHours();
+            let am = h < 12 ? 'am' : 'pm';
+            let hour1 = h % 12 || 12;
+            let nextH = h + 1;
+            let nextAm = nextH < 12 || nextH >= 24 ? 'am' : 'pm';
+            let hour2 = nextH % 12 || 12;
+            const currentSlotName = `${hour1}:00 ${am} - ${hour2}:00 ${nextAm}`.toLowerCase();
+
+            // Find which array index corresponds to the current hour slot
+            let currentSlotIndex = timeSlots.findIndex(s => s.toLowerCase() === currentSlotName);
+            if (currentSlotIndex === -1) currentSlotIndex = 0; // fallback if current hour is not in sheet
+
+            // Shift time slots so current slot is first
+            const shiftedTimeSlots = [
+                ...timeSlots.slice(currentSlotIndex),
+                ...timeSlots.slice(0, currentSlotIndex)
+            ];
+
             // Render Header (Row 0)
             const headerRow = document.createElement('tr');
-            rows[0].forEach(cellValue => {
+
+            // 1. Add Court Column Header
+            const thCourt = document.createElement('th');
+            thCourt.innerText = "Court";
+            thCourt.className = 'court-name-head';
+            headerRow.appendChild(thCourt);
+
+            // 2. Add LastUpdated Column Header
+            const thTimestamp = document.createElement('th');
+            thTimestamp.innerText = "LastUpdated";
+            thTimestamp.className = 'last-updated-head';
+            headerRow.appendChild(thTimestamp);
+
+            // 3. Add Shifted Time Slot Headers
+            shiftedTimeSlots.forEach(slot => {
                 const th = document.createElement('th');
-                th.innerText = String(cellValue).trim();
+                th.innerText = slot;
                 headerRow.appendChild(th);
             });
             thead.appendChild(headerRow);
-
-            timeSlots = rows[0].map(c => String(c).trim()).slice(1);
 
             // Render Body (Rows 1+)
             for (let i = 1; i < rows.length; i++) {
@@ -373,30 +466,91 @@
                 const tr = document.createElement('tr');
                 const courtName = String(rows[i][0]).trim();
 
-                // First column: Court Name
+                // Track the td element corresponding to the current hour for this row
+                let currentHourTdElement = null;
+
+                // 1. First column: Court Name
                 const tdName = document.createElement('td');
                 tdName.className = 'court-name';
                 tdName.innerText = courtName;
+                tdName.title = `Toggle ${courtName} availability for current hour`;
                 tr.appendChild(tdName);
 
-                // Data columns
-                for (let j = 1; j < rows[i].length; j++) {
+                // 2. Second column: LastUpdated
+                const tdTimestamp = document.createElement('td');
+                tdTimestamp.className = 'last-updated-col';
+                if (timestampColIndex !== -1 && rows[i][timestampColIndex]) {
+                    tdTimestamp.innerText = String(rows[i][timestampColIndex]).trim();
+                } else {
+                    tdTimestamp.innerText = globalLastUpdated || "-";
+                }
+                tr.appendChild(tdTimestamp);
+
+                // Extract all data columns for this row (excluding Court Name and Timestamp)
+                const rowData = [];
+                for (let k = 1; k < rows[i].length; k++) {
+                    if (k !== timestampColIndex) {
+                        rowData.push(rows[i][k]);
+                    }
+                }
+
+                // Pad with empty if needed
+                while (rowData.length < timeSlots.length) {
+                    rowData.push("");
+                }
+
+                // Shift data columns to match the shifted time slots
+                const shiftedData = [
+                    ...rowData.slice(currentSlotIndex),
+                    ...rowData.slice(0, currentSlotIndex)
+                ];
+
+                // 3. Data columns
+                shiftedData.forEach((statusVal, index) => {
                     const td = document.createElement('td');
                     td.className = 'status-cell';
-                    const status = String(rows[i][j]).trim();
+                    const status = String(statusVal).trim();
                     td.innerText = status;
 
                     if (status.toLowerCase().includes('unavailable')) {
                         td.classList.add('unavailable');
                     }
 
+                    // The *first* data column (index 0 in shifted array) is always the current hour slot
+                    if (index === 0) {
+                        currentHourTdElement = td;
+                    }
+
                     // Make ALL data cells clickable to toggle their status
-                    const timeSlot = timeSlots[j - 1];
-                    td.addEventListener('click', () => handleCellClick(td, courtName, timeSlot));
+                    const timeSlotName = shiftedTimeSlots[index];
+                    td.addEventListener('click', () => handleCellClick(td, courtName, timeSlotName));
                     tr.appendChild(td);
-                }
+                });
+
+                // Add click listener to the court name to toggle its current hour cell
+                tdName.addEventListener('click', () => {
+                    if (currentHourTdElement) {
+                        // Pass the current slot name from shiftedTimeSlots[0]
+                        handleCellClick(currentHourTdElement, courtName, shiftedTimeSlots[0]);
+                    } else {
+                        alert("Current hour slot is not available in the table.");
+                    }
+                });
+
                 tbody.appendChild(tr);
             }
+
+            // Sync the sticky offset for the 2nd column based on the auto-width 1st column
+            // Need a small timeout to let the browser compute the width
+            setTimeout(() => {
+                const firstColHeader = document.querySelector('#data-table th.court-name-head');
+                if (firstColHeader) {
+                    const offsetWidth = firstColHeader.offsetWidth;
+                    document.querySelectorAll('.last-updated-head, .last-updated-col').forEach(el => {
+                        el.style.left = offsetWidth + 'px';
+                    });
+                }
+            }, 10);
 
             document.getElementById('loading-text').style.display = 'none';
             document.getElementById('data-table').style.display = 'table';
@@ -419,29 +573,38 @@
             let nextAm = nextH < 12 || nextH >= 24 ? 'am' : 'pm';
             let hour2 = nextH % 12 || 12;
 
-            const currentSlotName = `${hour1}:00 ${am} - ${hour2}:00 ${nextAm}`.toLowerCase();
+            // Generate the current slot name and normalize it by removing ":00"
+            const rawCurrentSlotName = `${hour1}:00 ${am} - ${hour2}:00 ${nextAm}`.toLowerCase();
+            const currentSlotName = rawCurrentSlotName.replace(/:00/g, "");
 
             // Update the display text for the map legend
             const hourTextEl = document.getElementById('current-hour-text');
             if (hourTextEl) hourTextEl.innerText = `${hour1}:00 ${am.toUpperCase()} - ${hour2}:00 ${nextAm.toUpperCase()}`;
 
             const availabilityMap = {};
-            for (let i = 1; i < currentTableData.length; i++) {
-                if (currentTableData[i].length < 2 || !currentTableData[i][0]) continue;
-                const courtName = String(currentTableData[i][0]).trim();
-                let isAvailable = true;
-
-                for (let j = 1; j < currentTableData[i].length; j++) {
-                    const status = String(currentTableData[i][j]).trim().toLowerCase();
-                    const slotName = timeSlots[j - 1].toLowerCase();
-
-                    // Only check the slot corresponding to the current hour
-                    if (slotName === currentSlotName && status.includes('unavailable')) {
-                        isAvailable = false;
-                        break;
-                    }
+            if (currentTableData && currentTableData.length > 0) {
+                // Find all active header index offsets for timeSlots.
+                // headers are Court [0], LastUpdated (optional), Timeslots...
+                let dataOffsets = [];
+                for (let j = 1; j < currentTableData[0].length; j++) {
+                    if (j === timestampColIndex) continue;
+                    dataOffsets.push({ dataIndex: j, slotName: String(currentTableData[0][j]).trim().toLowerCase().replace(/:00/g, "") });
                 }
-                availabilityMap[courtName] = isAvailable;
+
+                for (let i = 1; i < currentTableData.length; i++) {
+                    if (currentTableData[i].length < 2 || !currentTableData[i][0]) continue;
+                    const courtName = String(currentTableData[i][0]).trim();
+                    let isAvailable = true;
+
+                    for (let slotData of dataOffsets) {
+                        const status = String(currentTableData[i][slotData.dataIndex]).trim().toLowerCase();
+                        if (slotData.slotName === currentSlotName && status.includes('unavailable')) {
+                            isAvailable = false;
+                            break;
+                        }
+                    }
+                    availabilityMap[courtName] = isAvailable;
+                }
             }
 
             courtCoords.forEach(c => {
@@ -499,10 +662,23 @@
             tdElement.innerText = "updating...";
             tdElement.classList.add('updating');
 
+            const tr = tdElement.parentElement;
+            const tdTimestamp = tr ? tr.querySelector('.last-updated-col') : null;
+            const originalTimestamp = tdTimestamp ? tdTimestamp.innerText : "";
+
+            if (tdTimestamp) {
+                tdTimestamp.innerText = "updating...";
+                tdTimestamp.classList.add('updating');
+            }
+
             if (GOOGLE_APPS_SCRIPT_URL === "YOUR_WEB_APP_URL_HERE") {
                 alert("Please replace YOUR_WEB_APP_URL_HERE in the code with your actual Google Apps Script Web App URL first.");
                 tdElement.innerText = originalText;
                 tdElement.classList.remove('updating');
+                if (tdTimestamp) {
+                    tdTimestamp.innerText = originalTimestamp;
+                    tdTimestamp.classList.remove('updating');
+                }
                 return;
             }
 
@@ -533,11 +709,50 @@
                     // Update state array and map
                     for (let i = 1; i < currentTableData.length; i++) {
                         if (String(currentTableData[i][0]).trim() === courtName) {
-                            const colIdx = timeSlots.indexOf(timeSlot) + 1;
-                            if (colIdx > 0) currentTableData[i][colIdx] = newStatus;
+                            // Find column index using original timeSlots array since it's already stripped of Court/LastUpdated
+                            const timeSlotIdx = timeSlots.indexOf(timeSlot);
+                            if (timeSlotIdx >= 0) {
+                                // Calculate actual colIdx in currentTableData.
+                                // It's Court (0) + [LastUpdated?] + TimeSlots
+                                // Find where the time slots start. They start after Court and LastUpdated (if present)
+                                let colOffset = 1;
+                                if (timestampColIndex !== -1) colOffset++;
+
+                                // But since currentTableData also includes the LastUpdated column (at index timestampColIndex),
+                                // it's safer to just search the row headers directly if possible, or use the offset logic.
+                                // Actually, let's just find the index from the first row of currentTableData
+                                const headerRow = currentTableData[0];
+                                let targetColIdx = -1;
+                                for (let k = 0; k < headerRow.length; k++) {
+                                    if (String(headerRow[k]).trim() === timeSlot) {
+                                        targetColIdx = k;
+                                        break;
+                                    }
+                                }
+
+                                if (targetColIdx !== -1) {
+                                    currentTableData[i][targetColIdx] = newStatus;
+                                }
+                            }
+
+                            if (timestampColIndex !== -1 && result.timestamp) {
+                                currentTableData[i][timestampColIndex] = result.timestamp;
+                            }
                             break;
                         }
                     }
+
+                    if (tdTimestamp) {
+                        if (result.timestamp) {
+                            tdTimestamp.innerText = result.timestamp;
+                        } else {
+                            // Fallback if the Google backend didn't provide a timestamp
+                            tdTimestamp.innerText = originalTimestamp;
+                            console.warn("Backend didn't return a timestamp. Is the Code.gs deployed?");
+                        }
+                        tdTimestamp.classList.remove('updating');
+                    }
+
                     updateMap();
 
                 } else {
@@ -550,6 +765,10 @@
                 // Revert UI on failure
                 tdElement.innerText = originalText;
                 tdElement.classList.remove('updating');
+                if (tdTimestamp) {
+                    tdTimestamp.innerText = originalTimestamp;
+                    tdTimestamp.classList.remove('updating');
+                }
             }
         }
 
