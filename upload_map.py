@@ -19,8 +19,11 @@ def upload_map_to_sheets():
     if creds_json:
         try:
             creds_dict = json.loads(creds_json)
+            # Fix for JWT signature errors: ensure newlines are correctly formatted
+            if 'private_key' in creds_dict:
+                creds_dict['private_key'] = creds_dict['private_key'].replace("\\n", "\n")
             creds = service_account.Credentials.from_service_account_info(creds_dict, scopes=scopes)
-            print("Authenticated using GCP_CREDENTIALS environment variable.")
+            print("Authenticated using GCP_CREDENTIALS environment variable (sanitized).")
         except Exception as e:
             print(f"Error parsing GCP_CREDENTIALS env var: {e}")
             creds = service_account.Credentials.from_service_account_file('credentials.json', scopes=scopes)

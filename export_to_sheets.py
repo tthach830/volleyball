@@ -7,13 +7,15 @@ import json
 def export_db_to_sheets(date_label=None, source_url=None):
     print("Connecting to Google Sheets...")
     
-    # Authenticate: Try environment variable first (for GitHub Actions), then local file
     creds_json = os.environ.get('GCP_CREDENTIALS')
     if creds_json:
         try:
             creds_dict = json.loads(creds_json)
+            # Fix for JWT signature errors: ensure newlines are correctly formatted
+            if 'private_key' in creds_dict:
+                creds_dict['private_key'] = creds_dict['private_key'].replace("\\n", "\n")
             gc = gspread.service_account_from_dict(creds_dict)
-            print("Authenticated using GCP_CREDENTIALS environment variable.")
+            print("Authenticated using GCP_CREDENTIALS environment variable (sanitized).")
         except Exception as e:
             print(f"Error parsing GCP_CREDENTIALS env var: {e}")
             gc = gspread.service_account(filename='credentials.json')
