@@ -10,6 +10,8 @@ on:
 jobs:
   scrape-and-update:
     runs-on: ubuntu-22.04
+    env:
+      TZ: America/Los_Angeles
 
     steps:
       - name: Checkout repository
