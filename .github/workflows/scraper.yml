@@ -3,14 +3,14 @@ name: Daily Volleyball Scraper
 on:
   schedule:
     # Runs at 15:00 UTC (1:00 AM PST) every day
-    - cron: '0 15 * * *'
+    - cron: "0 15 * * *"
   workflow_dispatch:
     # Allows for manual triggering via the Actions tab
 
 jobs:
   scrape-and-update:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -21,36 +21,38 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
-          
+          python-version: "3.11"
+
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          
+
       - name: Install Playwright Browsers
         run: playwright install chromium
-        
-      - name: Reconstruct GCP Credentials File
-        run: |
-          echo '${{ secrets.GCP_CREDENTIALS }}' > credentials.json
-          
+
       - name: Run Scraper
+        env:
+          GCP_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
         run: |
           python auto_scraper.py
-          
+
       - name: Export to Google Sheets
+        env:
+          GCP_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
         run: |
           python export_to_sheets.py
-          
+
       - name: Generate Visual Map Overlay
         run: |
           python generate_map.py
-          
+
       - name: Upload Map to Google Drive
+        env:
+          GCP_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
         run: |
           python upload_map.py
-          
+
       - name: Commit and Push Database Update
         run: |
           git config --global user.name 'github-actions[bot]'

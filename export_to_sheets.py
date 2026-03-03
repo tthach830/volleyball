@@ -1,10 +1,24 @@
 import sqlite3
 import gspread
 
+import os
+import json
+
 def export_db_to_sheets(date_label=None, source_url=None):
     print("Connecting to Google Sheets...")
-    # Authenticate using the service account credentials
-    gc = gspread.service_account(filename='credentials.json')
+    
+    # Authenticate: Try environment variable first (for GitHub Actions), then local file
+    creds_json = os.environ.get('GCP_CREDENTIALS')
+    if creds_json:
+        try:
+            creds_dict = json.loads(creds_json)
+            gc = gspread.service_account_from_dict(creds_dict)
+            print("Authenticated using GCP_CREDENTIALS environment variable.")
+        except Exception as e:
+            print(f"Error parsing GCP_CREDENTIALS env var: {e}")
+            gc = gspread.service_account(filename='credentials.json')
+    else:
+        gc = gspread.service_account(filename='credentials.json')
     
     print("Opening the existing Google Sheet...")
     # Open the sheet using its URL or ID

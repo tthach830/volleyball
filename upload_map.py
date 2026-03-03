@@ -15,8 +15,17 @@ def upload_map_to_sheets():
         'https://www.googleapis.com/auth/spreadsheets'
     ]
     
-    creds_file = 'credentials.json'
-    creds = service_account.Credentials.from_service_account_file(creds_file, scopes=scopes)
+    creds_json = os.environ.get('GCP_CREDENTIALS')
+    if creds_json:
+        try:
+            creds_dict = json.loads(creds_json)
+            creds = service_account.Credentials.from_service_account_info(creds_dict, scopes=scopes)
+            print("Authenticated using GCP_CREDENTIALS environment variable.")
+        except Exception as e:
+            print(f"Error parsing GCP_CREDENTIALS env var: {e}")
+            creds = service_account.Credentials.from_service_account_file('credentials.json', scopes=scopes)
+    else:
+        creds = service_account.Credentials.from_service_account_file('credentials.json', scopes=scopes)
     
     # 1. Update existing file on Drive
     print(f"Updating existing map image on Google Drive (ID: {file_id})...")
