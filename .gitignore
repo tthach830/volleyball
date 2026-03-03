@@ -1,3 +1,13 @@
 credentials.json
 .venv/
 __pycache__/
+*.db
+*.pyc
+.DS_Store
+error_screenshot.png
+failed_parse_dump.html
+debug_dump.html
+html_dump.html
+VolleyballCourt.svg
+map_status.png
+wkhtmltox/
