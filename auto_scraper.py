@@ -26,7 +26,28 @@ def run_scraper(specific_date=None):
     target_url = base_url + url_date + end_url
     print(f"Scraping availability for today: {display_date}")
     
-    # 2. Use Playwright to load the page and extract HTML
+    # 2. Ensure Database structure exists early
+    conn = sqlite3.connect('volleyball.db')
+    c = conn.cursor()
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS courts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT UNIQUE
+        )
+    ''')
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS slots (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            court_id INTEGER,
+            time_slot TEXT,
+            status TEXT,
+            FOREIGN KEY(court_id) REFERENCES courts(id)
+        )
+    ''')
+    conn.commit()
+    conn.close()
+
+    # 3. Use Playwright to load the page and extract HTML
     print("Launching headless browser...")
     with sync_playwright() as p:
         # Some WebTrac portals block basic Headless Chrome signatures
@@ -147,26 +168,9 @@ def run_scraper(specific_date=None):
     # 4. Update Database
     conn = sqlite3.connect('volleyball.db')
     c = conn.cursor()
-    c.execute('DROP TABLE IF EXISTS slots')
-    c.execute('DROP TABLE IF EXISTS courts')
     
-    # Create tables
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS courts (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT UNIQUE
-        )
-    ''')
-    
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS slots (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            court_id INTEGER,
-            time_slot TEXT,
-            status TEXT,
-            FOREIGN KEY(court_id) REFERENCES courts(id)
-        )
-    ''')
+    # Clear old slots for this specific run (we keep courts to avoid ID churn)
+    c.execute('DELETE FROM slots')
     
     for court in court_data:
         c.execute("INSERT OR IGNORE INTO courts (name) VALUES (?)", (court['facility'],))

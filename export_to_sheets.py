@@ -63,6 +63,13 @@ def export_db_to_sheets(date_label=None, source_url=None):
     conn = sqlite3.connect('volleyball.db')
     c = conn.cursor()
     
+    # Check if the courts table exists to avoid OperationalError
+    c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='courts'")
+    if not c.fetchone():
+        print("Table 'courts' does not exist yet. This usually happens if the first scrape failed. Skipping export.")
+        conn.close()
+        return
+
     # Get all courts, enforcing 'Main' to the top of the list, then alphabetizing the rest
     c.execute('''
         SELECT id, name FROM courts 
@@ -72,9 +79,21 @@ def export_db_to_sheets(date_label=None, source_url=None):
     ''')
     courts = c.fetchall()
     
+    if not courts:
+        print("No courts found in database. Skipping export.")
+        conn.close()
+        return
+
     # Get all distinct time slots for the header
     c.execute("SELECT DISTINCT time_slot FROM slots ORDER BY id") 
     time_slots = [row[0] for row in c.fetchall()]
+    
+    if not time_slots:
+        # If we have courts but no slots (e.g. Dream courts only), we still need some slots to show
+        # but for now, let's just warn and exit to keep it simple
+        print("No time slots found. Skipping export.")
+        conn.close()
+        return
     
     import datetime
     if not date_label:
