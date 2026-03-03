@@ -675,9 +675,8 @@
                 let nextAm = nextH < 12 || nextH >= 24 ? 'am' : 'pm';
                 let hour2 = nextH % 12 || 12;
 
-                // Generate the current slot name and normalize it by removing ":00"
-                const rawCurrentSlotName = `${hour1}:00 ${am} - ${hour2}:00 ${nextAm}`.toLowerCase();
-                const currentSlotName = rawCurrentSlotName.replace(/:00/g, "");
+                // Generate the current slot name (e.g., "7am-8am")
+                const currentSlotName = `${hour1}${am}-${hour2}${nextAm}`.toLowerCase();
 
                 // Update the display text for the map legend
                 const hourTextEl = document.getElementById('current-hour-text');
