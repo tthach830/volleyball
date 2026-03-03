@@ -15,40 +15,53 @@ def upload_map_to_sheets():
         'https://www.googleapis.com/auth/spreadsheets'
     ]
     
-    creds_json = os.environ.get('GCP_CREDENTIALS', '').strip()
-
-    # Remove surrounding quotes if added by the environment
-    if creds_json.startswith('"') and creds_json.endswith('"'):
-        creds_json = creds_json[1:-1]
-
-    if creds_json:
+    # 1. Try local file first (best for local development)
+    if os.path.exists('credentials.json'):
         try:
-            import base64
-            # Try to decode as Base64 first in case the user chose that robust path
-            try:
-                if not creds_json.startswith('{'):
-                    creds_json = base64.b64decode(creds_json).decode('utf-8')
-                    print("Decoded GCP_CREDENTIALS from Base64.")
-            except:
-                pass
-
-            creds_dict = json.loads(creds_json)
-            # Robust private key sanitization
-            if 'private_key' in creds_dict:
-                pk = creds_dict['private_key']
-                # Fix escaped newlines common in CI/CD
-                pk = pk.replace("\\n", "\n")
-                # Strip potential hidden whitespace
-                pk = pk.strip()
-                creds_dict['private_key'] = pk
-                
-            creds = service_account.Credentials.from_service_account_info(creds_dict, scopes=scopes)
-            print("Authenticated using GCP_CREDENTIALS environment variable (robustly parsed).")
-        except Exception as e:
-            print(f"Error parsing GCP_CREDENTIALS env var: {e}")
             creds = service_account.Credentials.from_service_account_file('credentials.json', scopes=scopes)
+            print("Authenticated using local credentials.json file.")
+        except Exception as e:
+            print(f"Error loading local credentials.json: {e}")
+            creds = None
     else:
-        creds = service_account.Credentials.from_service_account_file('credentials.json', scopes=scopes)
+        creds = None
+
+    # 2. Fallback to environment variable (best for GitHub Actions)
+    if creds is None:
+        creds_json = os.environ.get('GCP_CREDENTIALS', '').strip()
+
+        # Remove surrounding quotes if added by the environment
+        if creds_json.startswith('"') and creds_json.endswith('"'):
+            creds_json = creds_json[1:-1]
+
+        if creds_json:
+            try:
+                import base64
+                # Try to decode as Base64 first in case the user chose that robust path
+                try:
+                    if not creds_json.startswith('{'):
+                        creds_json = base64.b64decode(creds_json).decode('utf-8')
+                        print("Decoded GCP_CREDENTIALS from Base64.")
+                except:
+                    pass
+
+                creds_dict = json.loads(creds_json)
+                # Robust private key sanitization
+                if 'private_key' in creds_dict:
+                    pk = creds_dict['private_key']
+                    # Fix escaped newlines common in CI/CD
+                    pk = pk.replace("\\n", "\n")
+                    # Strip potential hidden whitespace
+                    pk = pk.strip()
+                    creds_dict['private_key'] = pk
+                    
+                creds = service_account.Credentials.from_service_account_info(creds_dict, scopes=scopes)
+                print("Authenticated using GCP_CREDENTIALS environment variable (robustly parsed).")
+            except Exception as e:
+                print(f"Error parsing GCP_CREDENTIALS env var: {e}")
+                raise Exception("Could not authenticate: No valid credentials found.")
+        else:
+            raise Exception("Could not authenticate: credentials.json not found and GCP_CREDENTIALS not set.")
     
     # 1. Update existing file on Drive
     print(f"Updating existing map image on Google Drive (ID: {file_id})...")
