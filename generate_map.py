@@ -76,8 +76,27 @@ def generate_map():
     # Try to load a generic font or fallback to default
     try:
         from PIL import ImageFont
-        # Use arialbd (Arial Bold) on Windows if available
-        font = ImageFont.truetype("arialbd.ttf", 20)
+        # 1. Try Windows font path
+        # 2. Try common Ubuntu/Linux font paths
+        # 3. Fallback to default
+        font_paths = [
+            "arialbd.ttf",                               # Windows / Local
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", # Ubuntu (Actions)
+            "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf", # Ubuntu Alternative
+        ]
+        
+        font = None
+        for path in font_paths:
+            try:
+                font = ImageFont.truetype(path, 20)
+                print(f"Loaded font from: {path}")
+                break
+            except:
+                continue
+        
+        if font is None:
+            print("No custom font found, using default.")
+            font = ImageFont.load_default()
     except Exception:
         font = ImageFont.load_default()
         
