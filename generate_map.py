@@ -29,7 +29,7 @@ def generate_map():
     if h2 == 0: h2 = 12
     am2 = "am" if (current_hour + 1) < 12 or (current_hour + 1) == 24 else "pm"
     
-    current_slot = f"{h1}:00 {am1} - {h2}:00 {am2}"
+    current_slot = f"{h1}{am1}-{h2}{am2}"
     target_slots = [current_slot]
     
     court_availability = {}

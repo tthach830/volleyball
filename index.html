@@ -526,7 +526,7 @@
                 let nextH = h + 1;
                 let nextAm = nextH < 12 || nextH >= 24 ? 'am' : 'pm';
                 let hour2 = nextH % 12 || 12;
-                const currentSlotName = `${hour1}:00 ${am} - ${hour2}:00 ${nextAm}`.toLowerCase();
+                const currentSlotName = `${hour1}${am}-${hour2}${nextAm}`.toLowerCase();
 
                 // Find which array index corresponds to the current hour slot
                 let currentSlotIndex = timeSlots.findIndex(s => s.toLowerCase() === currentSlotName);
@@ -681,7 +681,7 @@
 
                 // Update the display text for the map legend
                 const hourTextEl = document.getElementById('current-hour-text');
-                if (hourTextEl) hourTextEl.innerText = `${hour1}:00 ${am.toUpperCase()} - ${hour2}:00 ${nextAm.toUpperCase()}`;
+                if (hourTextEl) hourTextEl.innerText = `${hour1}${am.toUpperCase()}-${hour2}${nextAm.toUpperCase()}`;
 
                 const availabilityMap = {};
                 if (currentTableData && currentTableData.length > 0) {
@@ -690,7 +690,7 @@
                     let dataOffsets = [];
                     for (let j = 1; j < currentTableData[0].length; j++) {
                         if (j === timestampColIndex) continue;
-                        dataOffsets.push({ dataIndex: j, slotName: String(currentTableData[0][j]).trim().toLowerCase().replace(/:00/g, "") });
+                        dataOffsets.push({ dataIndex: j, slotName: String(currentTableData[0][j]).trim().toLowerCase() });
                     }
 
                     for (let i = 1; i < currentTableData.length; i++) {
