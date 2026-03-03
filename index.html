@@ -58,6 +58,7 @@
             font-weight: 800;
             background: linear-gradient(135deg, #e0f2fe 0%, #38bdf8 100%);
             -webkit-background-clip: text;
+            background-clip: text;
             -webkit-text-fill-color: transparent;
             margin-bottom: 0.5rem;
             letter-spacing: -0.025em;
@@ -186,9 +187,15 @@
 
         <main class="glass-panel">
             <h2 class="section-title">Availability Table</h2>
-            <div class="iframe-wrapper">
-                <iframe
-                    src="https://docs.google.com/spreadsheets/d/1bPhadhGcRUMPp-xsKcWx5M9LFQ_sheHoYbtZJEPMQ0g/htmlembed?widget=false&headers=false&chrome=false"></iframe>
+            <div id="table-container" style="overflow-x: auto; max-height: 60vh; flex-grow: 1; position: relative;">
+                <p id="loading-text" style="text-align: center; margin-top: 2rem;">Loading live data...</p>
+                <table id="data-table"
+                    style="width: 100%; border-collapse: separate; border-spacing: 0; display: none;">
+                    <thead id="table-head">
+                    </thead>
+                    <tbody id="table-body">
+                    </tbody>
+                </table>
             </div>
         </main>
 
@@ -197,11 +204,18 @@
             <p style="text-align: center; color: #fca5a5; font-size: 0.9rem; margin-top: -0.5rem; margin-bottom: 1rem;">
                 <span
                     style="display: inline-block; width: 12px; height: 12px; background-color: #ef4444; border-radius: 50%; margin-right: 6px; vertical-align: middle;"></span>
-                Red = Unavailable from 3pm - 7pm
+                Red = Unavailable for the Current Hour (<span id="current-hour-text"></span>)
             </p>
-            <div class="iframe-wrapper">
-                <iframe
-                    src="https://docs.google.com/spreadsheets/d/1bPhadhGcRUMPp-xsKcWx5M9LFQ_sheHoYbtZJEPMQ0g/htmlembed?widget=false&headers=false&chrome=false&gid=752444707"></iframe>
+            <div class="iframe-wrapper" id="map-wrapper"
+                style="position: relative; overflow: hidden; background: #fff; border-radius: 8px;">
+                <!-- The map has a native resolution of 1200x800 -->
+                <div id="map-scale-container"
+                    style="position: absolute; top: 0; left: 0; transform-origin: top left; width: 1200px; height: 800px;">
+                    <img src="map.png" alt="Court Map"
+                        style="position: absolute; top: 0; left: 0; width: 1200px; height: 800px; object-fit: cover;">
+                    <div id="map-dots-container"
+                        style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></div>
+                </div>
             </div>
         </main>
 
@@ -209,6 +223,339 @@
             &copy; 2026 Volleyball Court Scraper &bull; Auto-updated daily
         </footer>
     </div>
+
+    <style>
+        /* Table Styles */
+        #data-table th,
+        #data-table td {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            border-right: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 10px;
+            text-align: center;
+        }
+
+        #data-table th:first-child,
+        #data-table td:first-child {
+            border-left: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        #data-table tr:first-child th {
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        #data-table th {
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+            background-color: #1e293b;
+            /* Fully opaque background */
+            z-index: 10;
+        }
+
+        .court-name {
+            font-weight: 600;
+            text-align: left !important;
+            position: sticky;
+            left: 0;
+            background-color: #1e293b;
+            /* Fully opaque background */
+            z-index: 5;
+        }
+
+        /* The top-left corner cell needs the highest z-index to stay above both row and col scrolls */
+        #data-table th:first-child {
+            z-index: 15;
+            left: 0;
+        }
+
+        .status-cell {
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .status-cell:hover:not(.unavailable) {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .unavailable {
+            background-color: rgba(239, 68, 68, 0.8) !important;
+            color: white;
+            cursor: not-allowed;
+        }
+
+        .updating {
+            opacity: 0.5;
+            cursor: wait;
+        }
+    </style>
+
+    <script>
+        // Public Google Apps Script API URL
+        const GOOGLE_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz_fi2eIOPsvje45u3hMj5aqu9FOcKJ9vl2mlC_s3LjTQr3DfzyoISBOp0cShnH1kRoPQ/exec";
+
+        let currentTableData = [];
+        let timeSlots = [];
+
+        const courtCoords = [
+            { "court": "Main Beach Volleyball Court 01", "x": 124, "y": 538 },
+            { "court": "Main Beach Volleyball Court 02", "x": 185, "y": 648 },
+            { "court": "Main Beach Volleyball Court 03", "x": 236, "y": 749 },
+            { "court": "Main Beach Volleyball Court 04", "x": 317, "y": 438 },
+            { "court": "Main Beach Volleyball Court 05", "x": 377, "y": 546 },
+            { "court": "Main Beach Volleyball Court 06", "x": 428, "y": 654 },
+            { "court": "Main Beach Volleyball Court 07", "x": 509, "y": 334 },
+            { "court": "Main Beach Volleyball Court 08", "x": 567, "y": 445 },
+            { "court": "Main Beach Volleyball Court 09", "x": 619, "y": 558 },
+            { "court": "Main Beach Volleyball Court 10", "x": 713, "y": 231 },
+            { "court": "Main Beach Volleyball Court 11", "x": 717, "y": 371 },
+            { "court": "Main Beach Volleyball Court 12", "x": 819, "y": 449 },
+            { "court": "Main Beach Volleyball Court 13", "x": 916, "y": 140 },
+            { "court": "Main Beach Volleyball Court 14", "x": 964, "y": 246 },
+            { "court": "Main Beach Volleyball Court 15", "x": 1019, "y": 360 },
+            { "court": "Main Beach Volleyball Court 16", "x": 1109, "y": 42 },
+            { "court": "Main Beach Volleyball Court 17", "x": 1166, "y": 151 },
+            { "court": "Main Beach Volleyball Court 18", "x": 1190, "y": 269 }
+        ];
+
+        function resizeMap() {
+            const wrapper = document.getElementById('map-wrapper');
+            const scaleContainer = document.getElementById('map-scale-container');
+            if (wrapper && scaleContainer) {
+                const scale = wrapper.clientWidth / 1200;
+                scaleContainer.style.transform = `scale(${scale})`;
+                // Set wrapper height to match scaled map exactly 
+                wrapper.style.height = `${800 * scale}px`;
+            }
+        }
+        window.addEventListener('resize', resizeMap);
+
+        async function loadTableData() {
+            try {
+                // Fetch the data from the Google Apps Script Web App JSON endpoint
+                // We use standard fetch now but grab JSON to avoid the CSV CORS issue
+                const response = await fetch(GOOGLE_APPS_SCRIPT_URL);
+                const result = await response.json();
+
+                if (result.status === "success") {
+                    renderTableData(result.data);
+                } else {
+                    document.getElementById('loading-text').innerText = "API Error: " + result.message;
+                }
+            } catch (error) {
+                document.getElementById('loading-text').innerText = "Error loading data. Make sure the Web App is deployed and accessible to 'Anyone'.";
+                console.error("Error fetching data:", error);
+            }
+        }
+
+        function renderTableData(rows) {
+            currentTableData = rows;
+            const thead = document.getElementById('table-head');
+            const tbody = document.getElementById('table-body');
+
+            thead.innerHTML = '';
+            tbody.innerHTML = '';
+
+            // Render Header (Row 0)
+            const headerRow = document.createElement('tr');
+            rows[0].forEach(cellValue => {
+                const th = document.createElement('th');
+                th.innerText = String(cellValue).trim();
+                headerRow.appendChild(th);
+            });
+            thead.appendChild(headerRow);
+
+            timeSlots = rows[0].map(c => String(c).trim()).slice(1);
+
+            // Render Body (Rows 1+)
+            for (let i = 1; i < rows.length; i++) {
+                if (rows[i].length < 2 || !rows[i][0]) continue; // Skip empty rows
+
+                const tr = document.createElement('tr');
+                const courtName = String(rows[i][0]).trim();
+
+                // First column: Court Name
+                const tdName = document.createElement('td');
+                tdName.className = 'court-name';
+                tdName.innerText = courtName;
+                tr.appendChild(tdName);
+
+                // Data columns
+                for (let j = 1; j < rows[i].length; j++) {
+                    const td = document.createElement('td');
+                    td.className = 'status-cell';
+                    const status = String(rows[i][j]).trim();
+                    td.innerText = status;
+
+                    if (status.toLowerCase().includes('unavailable')) {
+                        td.classList.add('unavailable');
+                    }
+
+                    // Make ALL data cells clickable to toggle their status
+                    const timeSlot = timeSlots[j - 1];
+                    td.addEventListener('click', () => handleCellClick(td, courtName, timeSlot));
+                    tr.appendChild(td);
+                }
+                tbody.appendChild(tr);
+            }
+
+            document.getElementById('loading-text').style.display = 'none';
+            document.getElementById('data-table').style.display = 'table';
+
+            // Draw Interactive Map Overlay
+            updateMap();
+        }
+
+        function updateMap() {
+            const dotsContainer = document.getElementById('map-dots-container');
+            if (!dotsContainer) return;
+            dotsContainer.innerHTML = '';
+
+            const now = new Date();
+            let h = now.getHours();
+            let am = h < 12 ? 'am' : 'pm';
+            let hour1 = h % 12 || 12;
+
+            let nextH = h + 1;
+            let nextAm = nextH < 12 || nextH >= 24 ? 'am' : 'pm';
+            let hour2 = nextH % 12 || 12;
+
+            const currentSlotName = `${hour1}:00 ${am} - ${hour2}:00 ${nextAm}`.toLowerCase();
+
+            // Update the display text for the map legend
+            const hourTextEl = document.getElementById('current-hour-text');
+            if (hourTextEl) hourTextEl.innerText = `${hour1}:00 ${am.toUpperCase()} - ${hour2}:00 ${nextAm.toUpperCase()}`;
+
+            const availabilityMap = {};
+            for (let i = 1; i < currentTableData.length; i++) {
+                if (currentTableData[i].length < 2 || !currentTableData[i][0]) continue;
+                const courtName = String(currentTableData[i][0]).trim();
+                let isAvailable = true;
+
+                for (let j = 1; j < currentTableData[i].length; j++) {
+                    const status = String(currentTableData[i][j]).trim().toLowerCase();
+                    const slotName = timeSlots[j - 1].toLowerCase();
+
+                    // Only check the slot corresponding to the current hour
+                    if (slotName === currentSlotName && status.includes('unavailable')) {
+                        isAvailable = false;
+                        break;
+                    }
+                }
+                availabilityMap[courtName] = isAvailable;
+            }
+
+            courtCoords.forEach(c => {
+                const isAvail = availabilityMap[c.court] !== false; // defaults to true
+                const dot = document.createElement('div');
+                const r = 25;
+                dot.style.position = 'absolute';
+                dot.style.left = `${c.x - r}px`;
+                dot.style.top = `${c.y - r}px`;
+                dot.style.width = `${r * 2}px`;
+                dot.style.height = `${r * 2}px`;
+                dot.style.borderRadius = '50%';
+                dot.style.backgroundColor = isAvail ? 'rgba(0, 255, 0, 0.6)' : 'rgba(239, 68, 68, 0.8)'; // darker red matching UI
+                dot.style.border = '2px solid black';
+                dot.style.pointerEvents = 'none';
+
+                const label = document.createElement('div');
+                label.innerText = `Court ${c.court.split(' ').pop().replace(/^0/, '')}`;
+                label.style.position = 'absolute';
+                label.style.left = `${c.x}px`;
+                label.style.top = `${c.y + r + 5}px`;
+                label.style.transform = 'translateX(-50%)';
+                label.style.color = '#000';
+                label.style.fontWeight = 'bold';
+                label.style.fontSize = '20px';
+                label.style.fontFamily = 'Arial, sans-serif';
+                label.style.pointerEvents = 'none';
+                label.style.textShadow = '1px 1px 2px white, -1px -1px 2px white, 1px -1px 2px white, -1px 1px 2px white';
+
+                dotsContainer.appendChild(dot);
+                dotsContainer.appendChild(label);
+            });
+
+            resizeMap();
+        }
+
+        async function handleCellClick(tdElement, courtName, timeSlot) {
+            // If already updating, do nothing
+            if (tdElement.classList.contains('updating')) {
+                return;
+            }
+
+            // Determine what the NEW status should be based on current state
+            const isCurrentlyUnavailable = tdElement.classList.contains('unavailable');
+            const newStatus = isCurrentlyUnavailable ? "available" : "unavailable";
+            const actionText = isCurrentlyUnavailable ? "available" : "unavailable";
+
+            // Ask for confirmation (optional, but good for UX)
+            if (!confirm(`Mark ${courtName} as ${actionText} for ${timeSlot}?`)) {
+                return;
+            }
+
+            // Optimistic UI update
+            const originalText = tdElement.innerText;
+            tdElement.innerText = "updating...";
+            tdElement.classList.add('updating');
+
+            if (GOOGLE_APPS_SCRIPT_URL === "YOUR_WEB_APP_URL_HERE") {
+                alert("Please replace YOUR_WEB_APP_URL_HERE in the code with your actual Google Apps Script Web App URL first.");
+                tdElement.innerText = originalText;
+                tdElement.classList.remove('updating');
+                return;
+            }
+
+            try {
+                // Send background request to Google Apps Script
+                const response = await fetch(GOOGLE_APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        courtName: courtName,
+                        timeSlot: timeSlot,
+                        newStatus: newStatus
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.status === "success") {
+                    // Permanently change UI to new status
+                    tdElement.innerText = newStatus;
+                    tdElement.classList.remove('updating');
+
+                    if (newStatus === "unavailable") {
+                        tdElement.classList.add('unavailable');
+                    } else {
+                        tdElement.classList.remove('unavailable');
+                    }
+
+                    // Update state array and map
+                    for (let i = 1; i < currentTableData.length; i++) {
+                        if (String(currentTableData[i][0]).trim() === courtName) {
+                            const colIdx = timeSlots.indexOf(timeSlot) + 1;
+                            if (colIdx > 0) currentTableData[i][colIdx] = newStatus;
+                            break;
+                        }
+                    }
+                    updateMap();
+
+                } else {
+                    throw new Error(result.message);
+                }
+
+            } catch (error) {
+                console.error("Update failed:", error);
+                alert("Failed to update status. See console for details.");
+                // Revert UI on failure
+                tdElement.innerText = originalText;
+                tdElement.classList.remove('updating');
+            }
+        }
+
+        // Load data on page load
+        window.addEventListener('DOMContentLoaded', loadTableData);
+    </script>
 
 </body>
 
