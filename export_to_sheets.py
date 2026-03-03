@@ -7,15 +7,35 @@ import json
 def export_db_to_sheets(date_label=None, source_url=None):
     print("Connecting to Google Sheets...")
     
-    creds_json = os.environ.get('GCP_CREDENTIALS')
+    creds_json = os.environ.get('GCP_CREDENTIALS', '').strip()
+    
+    # Remove surrounding quotes if added by the environment
+    if creds_json.startswith('"') and creds_json.endswith('"'):
+        creds_json = creds_json[1:-1]
+
     if creds_json:
         try:
+            import base64
+            # Try to decode as Base64 first in case the user chose that robust path
+            try:
+                if not creds_json.startswith('{'):
+                    creds_json = base64.b64decode(creds_json).decode('utf-8')
+                    print("Decoded GCP_CREDENTIALS from Base64.")
+            except:
+                pass
+
             creds_dict = json.loads(creds_json)
-            # Fix for JWT signature errors: ensure newlines are correctly formatted
+            # Robust private key sanitization
             if 'private_key' in creds_dict:
-                creds_dict['private_key'] = creds_dict['private_key'].replace("\\n", "\n")
+                pk = creds_dict['private_key']
+                # Fix escaped newlines common in CI/CD
+                pk = pk.replace("\\n", "\n")
+                # Strip potential hidden whitespace
+                pk = pk.strip()
+                creds_dict['private_key'] = pk
+                
             gc = gspread.service_account_from_dict(creds_dict)
-            print("Authenticated using GCP_CREDENTIALS environment variable (sanitized).")
+            print("Authenticated using GCP_CREDENTIALS environment variable (robustly parsed).")
         except Exception as e:
             print(f"Error parsing GCP_CREDENTIALS env var: {e}")
             gc = gspread.service_account(filename='credentials.json')
