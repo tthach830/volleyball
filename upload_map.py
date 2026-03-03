@@ -4,6 +4,7 @@ from googleapiclient.discovery import build
 import googleapiclient.http
 import os
 import time
+import json
 
 def upload_map_to_sheets():
     file_id = '1B-C4aK_dOqIB1Ze8ChJ1lAdywZ5EN5m_'
