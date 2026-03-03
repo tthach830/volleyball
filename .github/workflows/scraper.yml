@@ -29,7 +29,9 @@ jobs:
           pip install -r requirements.txt
 
       - name: Install Playwright Browsers
-        run: playwright install chromium
+        run: |
+          playwright install chromium
+          playwright install-deps chromium
 
       - name: Run Scraper
         env:
@@ -60,3 +62,13 @@ jobs:
           git add -f volleyball.db map_status.png
           # Only commit if there are pending differences
           git diff --quiet && git diff --staged --quiet || (git commit -m "Automated update: database & map" && git push)
+
+      - name: Upload Debug Artifacts on Failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scraper-debug-data
+          path: |
+            failed_parse_dump.html
+            error_screenshot.png
+            volleyball.db

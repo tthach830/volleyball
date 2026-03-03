@@ -60,7 +60,11 @@ def run_scraper(specific_date=None):
         
         try:
             # Load page and wait for general network quietness
-            page.goto(target_url, wait_until="networkidle", timeout=60000)
+            print(f"Navigating to {target_url}...")
+            page.goto(target_url, wait_until="domcontentloaded", timeout=90000)
+            
+            # Wait a few seconds for any dynamic JS to settle
+            page.wait_for_timeout(5000)
             
             # WebTrac often uses a specific table or grid container that takes a moment to render
             print("Waiting for schedule grid to render...")
