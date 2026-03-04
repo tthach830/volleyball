@@ -263,6 +263,139 @@
             opacity: 1;
             text-decoration: underline;
         }
+
+        /* V3 Date Picker & Popup Styles */
+        .date-picker-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 0.5rem;
+            animation: fadeIn 1s ease-out;
+        }
+
+        .date-picker-container label {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .date-picker-container input[type="date"] {
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(15, 23, 42, 0.6);
+            color: white;
+            font-family: 'Inter', sans-serif;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .date-picker-container input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+            cursor: pointer;
+        }
+
+        /* Future Data Popup Modal */
+        #future-modal {
+            display: none;
+            position: fixed;
+            z-index: 10000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(12px);
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .future-modal-content {
+            background: var(--bg-color);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 16px;
+            width: 95%;
+            max-width: 1200px;
+            height: 85vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .future-modal-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(30, 41, 59, 0.8);
+        }
+
+        .future-modal-header h2 {
+            font-size: 1.5rem;
+            margin: 0;
+            background: linear-gradient(135deg, #e0f2fe 0%, #38bdf8 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .close-future-btn {
+            background: rgba(239, 68, 68, 0.2);
+            color: #fca5a5;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 8px;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .close-future-btn:hover {
+            background: rgba(239, 68, 68, 0.4);
+            color: white;
+        }
+
+        .future-modal-body {
+            flex-grow: 1;
+            padding: 1.5rem;
+            overflow: auto;
+            position: relative;
+        }
+
+        #future-loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-left-color: var(--accent-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
     </style>
 </head>
 
@@ -272,6 +405,10 @@
         <header>
             <h1>Santa Cruz Court Availability</h1>
             <p class="subtitle">Live daily schedule updates</p>
+            <div class="date-picker-container" style="margin-top: 1.5rem;">
+                <label for="future-date">Check Future Date:</label>
+                <input type="date" id="future-date" onchange="handleFutureDateSelect(this.value)">
+            </div>
         </header>
 
         <main class="glass-panel" style="height: auto; min-height: 0;">
@@ -330,6 +467,34 @@
                 </div>
                 <p id="passcode-error" style="color: #ef4444; font-size: 0.8rem; margin-top: 1rem; display: none;">
                     Incorrect passcode. Please try again.</p>
+            </div>
+        </div>
+
+        <!-- Future Data Modal -->
+        <div id="future-modal">
+            <div class="future-modal-content">
+                <div class="future-modal-header">
+                    <h2 id="future-modal-title">Court Availability</h2>
+                    <button class="close-future-btn" onclick="closeFutureModal()" title="Close">&times;</button>
+                </div>
+                <div class="future-modal-body" id="future-modal-body">
+                    <div id="future-loading">
+                        <div class="spinner"></div>
+                        <p id="future-loading-text" style="color: var(--accent-color); font-weight: 600;">Scraping live
+                            data from WebTrac... (May take 1-2 minutes)</p>
+                        <p style="color: var(--text-secondary); font-size: 0.85rem; max-width: 300px;">A cloud scraper
+                            is currently navigating the booking site to fetch the exact schedule for your selected date.
+                        </p>
+                    </div>
+                    <div id="future-table-container"
+                        style="display: none; overflow-x: auto; height: 100%; width: 100%;">
+                        <table id="future-data-table"
+                            style="width: 100%; border-collapse: separate; border-spacing: 0;">
+                            <thead id="future-table-head"></thead>
+                            <tbody id="future-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -432,9 +597,15 @@
             // Public Google Apps Script API URL
             const GOOGLE_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz_fi2eIOPsvje45u3hMj5aqu9FOcKJ9vl2mlC_s3LjTQr3DfzyoISBOp0cShnH1kRoPQ/exec";
 
+            // Note: GitHub Action triggering is now securely proxied through Google Apps Script
+
             let currentTableData = [];
             let timeSlots = [];
             let timestampColIndex = -1;
+
+            // State for future scraping
+            let futurePollInterval = null;
+            let currentTempSheetName = null;
 
             const courtCoords = [
                 { "court": "Main 01", "x": 124, "y": 538 },
@@ -917,6 +1088,245 @@
                 submit.onclick = handleAuth;
                 input.onkeypress = (e) => { if (e.key === 'Enter') handleAuth(); };
                 cancel.onclick = () => { modal.style.display = 'none'; };
+            }
+
+            // --------------------------------------------------------
+            // V3 Future Date Request Logic
+            // --------------------------------------------------------
+
+            async function handleFutureDateSelect(dateValue) {
+                if (!dateValue) return;
+
+                // Format YYYY-MM-DD to MMDDYYYY for the Python payload
+                const parts = dateValue.split('-');
+                if (parts.length !== 3) return;
+                const targetDatePayload = `${parts[1]}${parts[2]}${parts[0]}`;
+
+                // Format nicely for UI
+                const dateObj = new Date(parts[0], parts[1] - 1, parts[2]);
+                const displayDate = dateObj.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+
+                // Generate unique sheet ID
+                const reqId = "Temp_" + Math.random().toString(36).substr(2, 9);
+                currentTempSheetName = reqId;
+
+                // Reset and show modal
+                document.getElementById('future-modal-title').innerText = `Court Availability - ${displayDate}`;
+                document.getElementById('future-loading').style.display = 'flex';
+                document.getElementById('future-table-container').style.display = 'none';
+                document.getElementById('future-modal').style.display = 'flex';
+
+                // 1. Trigger GitHub Action safely via Google Apps Script server
+                try {
+                    const response = await fetch(GOOGLE_APPS_SCRIPT_URL, {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            action: 'triggerScrape',
+                            targetDate: targetDatePayload,
+                            sheetName: reqId
+                        })
+                    });
+
+                    const result = await response.json();
+
+                    if (result.status !== "success") {
+                        console.error("Failed to trigger scraper:", result.message);
+                        document.getElementById('future-loading-text').innerText = "Failed to start scraper: " + result.message;
+                        return;
+                    }
+
+                    // 2. Start polling Apps Script for the new sheet
+                    startPollingForTempSheet(reqId);
+
+                } catch (e) {
+                    console.error("Network error triggering action via backend:", e);
+                    document.getElementById('future-loading-text').innerText = "Network error. Could not contact Google Apps Script backend.";
+                }
+            }
+
+            function startPollingForTempSheet(sheetName) {
+                if (futurePollInterval) clearInterval(futurePollInterval);
+
+                let attempts = 0;
+                const maxAttempts = 60; // 5 minutes max at 5s intervals
+
+                futurePollInterval = setInterval(async () => {
+                    attempts++;
+                    try {
+                        const response = await fetch(`${GOOGLE_APPS_SCRIPT_URL}?sheetName=${sheetName}`);
+                        const result = await response.json();
+
+                        if (result.status === "success") {
+                            // Sheet is ready! Stop polling and render
+                            clearInterval(futurePollInterval);
+                            futurePollInterval = null;
+                            renderFutureTable(result.data, sheetName);
+                        } else if (result.status === "pending" || result.status === "error") {
+                            // Keep waiting
+                            document.getElementById('future-loading-text').innerText = `Still scraping... (Attempt ${attempts}/${maxAttempts})`;
+                            if (attempts >= maxAttempts) {
+                                clearInterval(futurePollInterval);
+                                document.getElementById('future-loading-text').innerText = "Scraping timed out. The backend took too long.";
+                            }
+                        }
+                    } catch (e) {
+                        console.error("Polling error:", e);
+                    }
+                }, 5000); // Poll every 5 seconds
+            }
+
+            function renderFutureTable(rows, sheetName) {
+                document.getElementById('future-loading').style.display = 'none';
+                const container = document.getElementById('future-table-container');
+                container.style.display = 'block';
+
+                const thead = document.getElementById('future-table-head');
+                const tbody = document.getElementById('future-table-body');
+
+                thead.innerHTML = '';
+                tbody.innerHTML = '';
+
+                if (!rows || rows.length === 0) return;
+
+                // For future tables, we don't care about "current hour" shifting. 
+                // Just render exactly as exported.
+                const headerRow = document.createElement('tr');
+                rows[0].forEach((header, idx) => {
+                    const th = document.createElement('th');
+                    th.innerText = String(header).trim();
+                    if (idx === 0) {
+                        th.className = 'court-name-head';
+                        // Use inline styles to mimic main table stickiness in isolated scope
+                        th.style.position = 'sticky';
+                        th.style.left = '0';
+                        th.style.zIndex = '15';
+                        th.style.backgroundColor = '#1e293b';
+                    }
+                    headerRow.appendChild(th);
+                });
+                thead.appendChild(headerRow);
+
+                for (let i = 1; i < rows.length; i++) {
+                    if (!rows[i][0]) continue;
+
+                    const tr = document.createElement('tr');
+                    const courtName = String(rows[i][0]).trim();
+
+                    rows[i].forEach((cellValue, idx) => {
+                        const td = document.createElement('td');
+                        const status = String(cellValue).trim();
+                        td.innerText = status;
+
+                        if (idx === 0) {
+                            td.className = 'court-name';
+                            td.style.position = 'sticky';
+                            td.style.left = '0';
+                            td.style.zIndex = '5';
+                            td.style.backgroundColor = '#1e293b';
+                        } else if (idx > 0 && status.toLowerCase().includes('unavailable')) {
+                            td.classList.add('unavailable');
+                            td.style.backgroundColor = 'rgba(239, 68, 68, 0.8)';
+                            td.style.color = 'white';
+                        }
+
+                        // Let's make future cells clickable too, using the same handleCellClick 
+                        // but modified to accept sheetName if we wanted to. 
+                        // For V3 simplicity, let's just make it read-only first, or pass sheetname to handleCellClick.
+                        // If you want them clickable:
+                        if (idx > 1) { // 0 is name, 1 is LastUpdated
+                            td.className = 'status-cell';
+                            td.addEventListener('click', () => {
+                                // Re-using handleCellClick but pointing to a specific sheet.
+                                // We need to upgrade handleCellClick to accept sheetName in the main code, 
+                                // but for now we'll write an inline custom click handler for the future table.
+                                handleFutureCellClick(td, courtName, String(rows[0][idx]).trim(), sheetName);
+                            });
+                        }
+
+                        tr.appendChild(td);
+                    });
+                    tbody.appendChild(tr);
+                }
+            }
+
+            async function handleFutureCellClick(tdElement, courtName, timeSlot, sheetName) {
+                if (!isAuthorized()) {
+                    showPasscodeModal(() => handleFutureCellClick(tdElement, courtName, timeSlot, sheetName));
+                    return;
+                }
+
+                if (tdElement.innerText === 'updating...' || tdElement.innerText === '') return;
+
+                const isAvail = tdElement.innerText.toLowerCase() === 'available';
+                const newStatus = isAvail ? 'unavailable' : 'available';
+
+                if (!confirm(`Mark ${courtName} as ${newStatus} for ${timeSlot}?`)) return;
+
+                const origText = tdElement.innerText;
+                tdElement.innerText = 'updating...';
+                tdElement.style.opacity = '0.5';
+
+                try {
+                    const response = await fetch(GOOGLE_APPS_SCRIPT_URL, {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            courtName: courtName,
+                            timeSlot: timeSlot,
+                            newStatus: newStatus,
+                            sheetName: sheetName
+                        })
+                    });
+                    const result = await response.json();
+                    if (result.status === 'success') {
+                        tdElement.innerText = newStatus;
+                        tdElement.style.opacity = '1';
+                        if (newStatus === 'unavailable') {
+                            tdElement.style.backgroundColor = 'rgba(239, 68, 68, 0.8)';
+                            tdElement.style.color = 'white';
+                        } else {
+                            tdElement.style.backgroundColor = '';
+                            tdElement.style.color = '';
+                        }
+                    } else {
+                        throw new Error(result.message);
+                    }
+                } catch (e) {
+                    alert("Update failed: " + e.message);
+                    tdElement.innerText = origText;
+                    tdElement.style.opacity = '1';
+                }
+            }
+
+            async function closeFutureModal() {
+                // Clear UI
+                document.getElementById('future-modal').style.display = 'none';
+                document.getElementById('future-table-container').style.display = 'none';
+                document.getElementById('future-date').value = '';
+
+                // Stop any ongoing polling
+                if (futurePollInterval) {
+                    clearInterval(futurePollInterval);
+                    futurePollInterval = null;
+                }
+
+                // Send delete request to Google Apps Script
+                if (currentTempSheetName) {
+                    const sheetToDelete = currentTempSheetName;
+                    currentTempSheetName = null;
+
+                    try {
+                        // Send POST fire-and-forget to delete
+                        fetch(GOOGLE_APPS_SCRIPT_URL, {
+                            method: 'POST',
+                            body: JSON.stringify({
+                                action: "deleteSheet",
+                                sheetName: sheetToDelete
+                            })
+                        }).catch(console.error);
+                    } catch (e) {
+                        console.error("Error initiating sheet deletion:", e);
+                    }
+                }
             }
 
             // Load data on page load

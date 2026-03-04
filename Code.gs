@@ -10,17 +10,108 @@ function doPost(e) {
   try {
     // Attempt to parse the incoming request data
     var data = JSON.parse(e.postData.contents);
-    var courtName = data.courtName;
-    var timeSlot = data.timeSlot;
-    var newStatus = data.newStatus || "unavailable";
+    var action = data.action || "update";
     
     // Open the Google Sheet by its exact ID to ensure it finds it
     var spreadsheet = SpreadsheetApp.openById("1bPhadhGcRUMPp-xsKcWx5M9LFQ_sheHoYbtZJEPMQ0g");
-    var sheet = spreadsheet.getSheets()[0]; // Always targets the first tab
+    
+    // Handle sheet deletion action
+    if (action === "deleteSheet") {
+      var targetSheetName = data.sheetName;
+      if (!targetSheetName) {
+        return ContentService.createTextOutput(JSON.stringify({
+          "status": "error",
+          "message": "sheetName is required for deleteSheet action"
+        })).setMimeType(ContentService.MimeType.JSON);
+      }
+      
+      var targetSheet = spreadsheet.getSheetByName(targetSheetName);
+      if (targetSheet) {
+        spreadsheet.deleteSheet(targetSheet);
+        return ContentService.createTextOutput(JSON.stringify({
+          "status": "success",
+          "message": "Successfully deleted sheet " + targetSheetName
+        })).setMimeType(ContentService.MimeType.JSON);
+      } else {
+        return ContentService.createTextOutput(JSON.stringify({
+          "status": "error",
+          "message": "Sheet " + targetSheetName + " not found to delete"
+        })).setMimeType(ContentService.MimeType.JSON);
+      }
+    }
+    
+    // Handle trigger scraper action securely from the server side
+    if (action === "triggerScrape") {
+      var targetDate = data.targetDate;
+      var triggerSheetName = data.sheetName;
+      
+      // Fetch PAT from the hidden Google Apps Script properties to avoid leaking it in git
+      var githubPat = PropertiesService.getScriptProperties().getProperty('GITHUB_PAT');
+      
+      if (!githubPat) {
+        return ContentService.createTextOutput(JSON.stringify({
+          "status": "error",
+          "message": "GITHUB_PAT is missing in Google Apps Script -> Settings -> Script Properties."
+        })).setMimeType(ContentService.MimeType.JSON);
+      }
+      
+      var repoOwner = "tthach830";
+      var repoName = "volleyball";
+      
+      var githubUrl = "https://api.github.com/repos/" + repoOwner + "/" + repoName + "/dispatches";
+      
+      var payload = {
+        "event_type": "scrape_future_date",
+        "client_payload": {
+          "target_date": targetDate,
+          "sheet_name": triggerSheetName
+        }
+      };
+      
+      var options = {
+        "method": "post",
+        "headers": {
+          "Accept": "application/vnd.github.v3+json",
+          "Authorization": "token " + githubPat
+        },
+        "contentType": "application/json",
+        "payload": JSON.stringify(payload),
+        "muteHttpExceptions": true
+      };
+      
+      var response = UrlFetchApp.fetch(githubUrl, options);
+      var responseCode = response.getResponseCode();
+      
+      if (responseCode >= 200 && responseCode < 300) {
+        return ContentService.createTextOutput(JSON.stringify({
+          "status": "success",
+          "message": "Successfully triggered GitHub Action server-side"
+        })).setMimeType(ContentService.MimeType.JSON);
+      } else {
+        return ContentService.createTextOutput(JSON.stringify({
+          "status": "error",
+          "message": "GitHub API returned " + responseCode + ": " + response.getContentText()
+        })).setMimeType(ContentService.MimeType.JSON);
+      }
+    }
+    
+    // Default action: update cell status
+    var courtName = data.courtName;
+    var timeSlot = data.timeSlot;
+    var newStatus = data.newStatus || "unavailable";
+    var sheetName = data.sheetName; // Optional, defaults to first tab if not provided
+    
+    var sheet = null;
+    if (sheetName) {
+      sheet = spreadsheet.getSheetByName(sheetName);
+    } else {
+      sheet = spreadsheet.getSheets()[0]; // Fallback to first tab
+    }
+    
     if (!sheet) {
       return ContentService.createTextOutput(JSON.stringify({
         "status": "error",
-        "message": "First sheet not found"
+        "message": sheetName ? ("Sheet '" + sheetName + "' not found") : "First sheet not found"
       })).setMimeType(ContentService.MimeType.JSON);
     }
     
@@ -124,12 +215,27 @@ function doOptions(e) {
 // Return table data using GET
 function doGet(e) {
   try {
+    var sheetName = e.parameter.sheetName; // Extract optional sheetName parameter
     var spreadsheet = SpreadsheetApp.openById("1bPhadhGcRUMPp-xsKcWx5M9LFQ_sheHoYbtZJEPMQ0g");
-    var sheet = spreadsheet.getSheets()[0];
+    
+    var sheet = null;
+    if (sheetName) {
+      sheet = spreadsheet.getSheetByName(sheetName);
+      if (!sheet && sheetName.startsWith('Temp_')) {
+        // If they requested a temp sheet but it's not ready yet, return a special pending status
+        return ContentService.createTextOutput(JSON.stringify({
+          "status": "pending",
+          "message": "Temporary sheet not ready yet"
+        })).setMimeType(ContentService.MimeType.JSON);
+      }
+    } else {
+      sheet = spreadsheet.getSheets()[0];
+    }
+    
     if (!sheet) {
       return ContentService.createTextOutput(JSON.stringify({
         "status": "error",
-        "message": "First sheet not found"
+        "message": sheetName ? ("Sheet '" + sheetName + "' not found") : "First sheet not found"
       })).setMimeType(ContentService.MimeType.JSON);
     }
     
