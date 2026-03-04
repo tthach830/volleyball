@@ -43,19 +43,9 @@ jobs:
           GCP_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
         run: |
           if [ "${{ github.event_name }}" == "repository_dispatch" ]; then
-            python auto_scraper.py "${{ github.event.client_payload.target_date }}"
+            python auto_scraper.py --date "${{ github.event.client_payload.target_date }}" --sheetname "${{ github.event.client_payload.sheet_name }}"
           else
             python auto_scraper.py
-          fi
-
-      - name: Export to Google Sheets
-        env:
-          GCP_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
-        run: |
-          if [ "${{ github.event_name }}" == "repository_dispatch" ]; then
-            python export_to_sheets.py --date "${{ github.event.client_payload.target_date }}" --sheetname "${{ github.event.client_payload.sheet_name }}"
-          else
-            python export_to_sheets.py
           fi
 
       - name: Generate Visual Map Overlay

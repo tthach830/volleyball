@@ -270,3 +270,17 @@ function doGet(e) {
     })).setMimeType(ContentService.MimeType.JSON);
   }
 }
+
+// --------------------------------------------------------------------------
+// Run this function ONCE from the Apps Script Editor to grant permissions!
+// --------------------------------------------------------------------------
+function setupPermissions() {
+  try {
+    // This dummy request forces Google to ask you for 'UrlFetchApp' permissions.
+    // It purposefully points to a safe placeholder URL.
+    UrlFetchApp.fetch("https://www.google.com");
+    Logger.log("Permissions granted successfully! You can now deploy as a Web App.");
+  } catch (e) {
+    Logger.log("Error during setup: " + e.toString());
+  }
+}

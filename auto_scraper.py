@@ -5,14 +5,18 @@ import sqlite3
 import export_to_sheets
 import sys
 
-def run_scraper(specific_date=None):
+def run_scraper(specific_date=None, target_sheet_name=None):
     # 1. Determine target date
     if specific_date:
         try:
             target_date = datetime.datetime.strptime(specific_date, "%m%d%Y")
         except ValueError:
-            print(f"Error: Invalid date format '{specific_date}'. Please use MMDDYYYY.")
-            return
+            try:
+                # Fallback to YYYY-MM-DD
+                target_date = datetime.datetime.strptime(specific_date, "%Y-%m-%d")
+            except ValueError:
+                print(f"Error: Invalid date format '{specific_date}'. Please use MMDDYYYY or YYYY-MM-DD.")
+                return
     else:
         target_date = datetime.datetime.now()
 
@@ -216,10 +220,18 @@ def run_scraper(specific_date=None):
     
     print("Database updated. Exporting to Google Sheets...")
     # 5. Export to Google Sheets
-    export_to_sheets.export_db_to_sheets(date_label=header_date, source_url=target_url, target_date_str=target_date_str)
+    export_to_sheets.export_db_to_sheets(date_label=header_date, source_url=target_url, target_date_str=target_date_str, target_sheet_name=target_sheet_name)
     
     print("Scraping and update complete!")
 
+import argparse
+    
 if __name__ == '__main__':
-    date_arg = sys.argv[1] if len(sys.argv) > 1 else None
-    run_scraper(date_arg)
+    parser = argparse.ArgumentParser(description="WebTrac Court Availability Scraper")
+    parser.add_argument("positional_date", nargs="?", help="Optional Target date in MMDDYYYY format for backward compatibility")
+    parser.add_argument("--date", help="The target date to scrape (MMDDYYYY or YYYY-MM-DD format).")
+    parser.add_argument("--sheetname", help="The specific name of the sheet to export data to.")
+    args = parser.parse_args()
+    
+    date_arg = args.date if args.date else args.positional_date
+    run_scraper(specific_date=date_arg, target_sheet_name=args.sheetname)
