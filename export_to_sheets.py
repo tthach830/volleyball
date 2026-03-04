@@ -207,7 +207,9 @@ def export_db_to_sheets(date_label=None, source_url=None, target_date_str=None):
             # We don't want to export Dream/Harbor empty slots to history unless they have real status
             # But the requirement implies exporting what we scraped
             # Actually, let's only log Main courts to history to save space, or log them all. Let's log them all.
-            append_data.append([scrape_timestamp, target_date_str, row[0], row[1], row[2]])
+            court_name = row[0]
+            display_name = court_name.replace("Main Beach Volleyball Court", "Main")
+            append_data.append([scrape_timestamp, target_date_str, display_name, row[1], row[2]])
         
         history_sheet.append_rows(append_data)
         print(f"Appended {len(append_data)} rows to History sheet.")
