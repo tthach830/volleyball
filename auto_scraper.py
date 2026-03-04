@@ -41,9 +41,17 @@ def run_scraper(specific_date=None):
             court_id INTEGER,
             time_slot TEXT,
             status TEXT,
+            date TEXT,
             FOREIGN KEY(court_id) REFERENCES courts(id)
         )
     ''')
+    
+    # Safely migrate existing databases
+    try:
+        c.execute('ALTER TABLE slots ADD COLUMN date TEXT')
+    except sqlite3.OperationalError:
+        pass # Column already exists
+    
     conn.commit()
     conn.close()
 
@@ -176,8 +184,9 @@ def run_scraper(specific_date=None):
     conn = sqlite3.connect('volleyball.db')
     c = conn.cursor()
     
-    # Clear old slots for this specific run (we keep courts to avoid ID churn)
-    c.execute('DELETE FROM slots')
+    # Clear old slots for this specific date only (so we can re-run same day safely)
+    target_date_str = target_date.strftime("%Y-%m-%d")
+    c.execute('DELETE FROM slots WHERE date = ? OR date IS NULL', (target_date_str,))
     
     for court in court_data:
         c.execute("INSERT OR IGNORE INTO courts (name) VALUES (?)", (court['facility'],))
@@ -185,10 +194,10 @@ def run_scraper(specific_date=None):
         court_id = c.fetchone()[0]
         
         for slot in court['available_slots']:
-            c.execute("INSERT INTO slots (court_id, time_slot, status) VALUES (?, ?, ?)", (court_id, slot, 'available'))
+            c.execute("INSERT INTO slots (court_id, time_slot, status, date) VALUES (?, ?, ?, ?)", (court_id, slot, 'available', target_date_str))
             
         for slot in court['booked_slots']:
-            c.execute("INSERT INTO slots (court_id, time_slot, status) VALUES (?, ?, ?)", (court_id, slot, 'unavailable'))
+            c.execute("INSERT INTO slots (court_id, time_slot, status, date) VALUES (?, ?, ?, ?)", (court_id, slot, 'unavailable', target_date_str))
             
     # Inject Dream and Harbor courts as fully available for all generated timeslots
     c.execute("SELECT DISTINCT time_slot FROM slots")
@@ -200,14 +209,14 @@ def run_scraper(specific_date=None):
         c.execute("SELECT id FROM courts WHERE name = ?", (extra_court,))
         court_id = c.fetchone()[0]
         for slot in all_time_slots:
-            c.execute("INSERT INTO slots (court_id, time_slot, status) VALUES (?, ?, ?)", (court_id, slot, 'available'))
+            c.execute("INSERT INTO slots (court_id, time_slot, status, date) VALUES (?, ?, ?, ?)", (court_id, slot, 'available', target_date_str))
             
     conn.commit()
     conn.close()
     
     print("Database updated. Exporting to Google Sheets...")
     # 5. Export to Google Sheets
-    export_to_sheets.export_db_to_sheets(date_label=header_date, source_url=target_url)
+    export_to_sheets.export_db_to_sheets(date_label=header_date, source_url=target_url, target_date_str=target_date_str)
     
     print("Scraping and update complete!")
 

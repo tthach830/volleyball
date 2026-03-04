@@ -48,8 +48,9 @@ def generate_map():
             court_id = res[0]
             
             # If any of the target slots are unavailable, mark the court as unavailable for this period
+            target_date_str = now.strftime("%Y-%m-%d")
             for slot in target_slots:
-                c.execute("SELECT status FROM slots WHERE court_id = ? AND time_slot = ?", (court_id, slot))
+                c.execute("SELECT status FROM slots WHERE court_id = ? AND time_slot = ? AND (date = ? OR date IS NULL)", (court_id, slot, target_date_str))
                 status_res = c.fetchone()
                 if status_res and status_res[0] == 'unavailable':
                     is_available = False

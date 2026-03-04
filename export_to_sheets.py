@@ -3,8 +3,12 @@ import gspread
 
 import os
 import json
+import datetime
 
-def export_db_to_sheets(date_label=None, source_url=None):
+def export_db_to_sheets(date_label=None, source_url=None, target_date_str=None):
+    if not target_date_str:
+        import datetime
+        target_date_str = datetime.datetime.now().strftime("%Y-%m-%d")
     print("Connecting to Google Sheets...")
     
     # 1. Try local file first (best for local development)
@@ -95,7 +99,6 @@ def export_db_to_sheets(date_label=None, source_url=None):
         conn.close()
         return
     
-    import datetime
     if not date_label:
         today = datetime.datetime.now()
         date_label = today.strftime("%B %d")
@@ -137,7 +140,7 @@ def export_db_to_sheets(date_label=None, source_url=None):
             if "main" not in court_name.lower():
                 row.append("available")
             else:
-                c.execute("SELECT status FROM slots WHERE court_id = ? AND time_slot = ?", (court_id, ts))
+                c.execute("SELECT status FROM slots WHERE court_id = ? AND time_slot = ? AND (date = ? OR date IS NULL)", (court_id, ts, target_date_str))
                 res = c.fetchone()
                 row.append(res[0] if res else "N/A")
         court_rows.append(row)
@@ -181,6 +184,34 @@ def export_db_to_sheets(date_label=None, source_url=None):
     }
     sh.batch_update(body)
     
+    print("Writing data to the History sheet...")
+    try:
+        history_sheet = sh.worksheet("History")
+    except gspread.exceptions.WorksheetNotFound:
+        history_sheet = sh.add_worksheet(title="History", rows="1000", cols="5")
+        history_sheet.append_row(["Scrape Timestamp", "Date", "Court", "Time Slot", "Status"])
+
+    c.execute('''
+        SELECT c.name, s.time_slot, s.status
+        FROM slots s
+        JOIN courts c ON s.court_id = c.id
+        WHERE s.date = ? OR s.date IS NULL
+        ORDER BY c.name, s.id
+    ''', (target_date_str,))
+    history_data = c.fetchall()
+
+    if history_data:
+        scrape_timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        append_data = []
+        for row in history_data:
+            # We don't want to export Dream/Harbor empty slots to history unless they have real status
+            # But the requirement implies exporting what we scraped
+            # Actually, let's only log Main courts to history to save space, or log them all. Let's log them all.
+            append_data.append([scrape_timestamp, target_date_str, row[0], row[1], row[2]])
+        
+        history_sheet.append_rows(append_data)
+        print(f"Appended {len(append_data)} rows to History sheet.")
+
     print("Data export complete!")
 
 if __name__ == '__main__':
