@@ -4,8 +4,9 @@ import gspread
 import os
 import json
 import datetime
+import argparse
 
-def export_db_to_sheets(date_label=None, source_url=None, target_date_str=None):
+def export_db_to_sheets(date_label=None, source_url=None, target_date_str=None, target_sheet_name=None):
     if not target_date_str:
         target_date_str = datetime.datetime.now().strftime("%Y-%m-%d")
     print("Connecting to Google Sheets...")
@@ -102,8 +103,18 @@ def export_db_to_sheets(date_label=None, source_url=None, target_date_str=None):
         today = datetime.datetime.now()
         date_label = today.strftime("%B %d")
     
-    worksheet = sh.sheet1
-    print("Writing data to the sheet...")
+    if target_sheet_name:
+        print(f"Target sheet name provided: {target_sheet_name}. Creating/getting worksheet...")
+        try:
+            worksheet = sh.worksheet(target_sheet_name)
+            worksheet.clear() # Clear existing if it somehow exists
+        except gspread.exceptions.WorksheetNotFound:
+            # Create a new worksheet with enough rows and cols
+            worksheet = sh.add_worksheet(title=target_sheet_name, rows="100", cols="25")
+    else:
+        worksheet = sh.sheet1
+        
+    print(f"Writing data to the sheet: {worksheet.title}...")
     
     # A1: Clickable hyperlink titled "Court (March 10)" linking to the WebTrac scrape URL
     link_label = f"Court ({date_label})"
@@ -213,7 +224,57 @@ def export_db_to_sheets(date_label=None, source_url=None, target_date_str=None):
         history_sheet.append_rows(append_data)
         print(f"Appended {len(append_data)} rows to History sheet.")
 
+    # Apply some basic formatting to the new sheet if we created it
+    if target_sheet_name:
+        worksheet.format("A1:Z1", {
+            "backgroundColor": {
+              "red": 0.9,
+              "green": 0.9,
+              "blue": 0.9
+            },
+            "textFormat": {
+              "bold": True
+            }
+        })
+        # Auto-resize columns
+        sh.batch_update({
+            "requests": [{
+                "autoResizeDimensions": {
+                    "dimensions": {
+                        "sheetId": worksheet.id,
+                        "dimension": "COLUMNS",
+                        "startIndex": 0,
+                        "endIndex": len(time_slots) + 2
+                    }
+                }
+            }]
+        })
+
     print("Data export complete!")
 
 if __name__ == '__main__':
-    export_db_to_sheets()
+    parser = argparse.ArgumentParser(description="Export volleyball database to Google Sheets.")
+    parser.add_argument("--date", help="The target date to export data for (YYYY-MM-DD format).")
+    parser.add_argument("--sheetname", help="The specific name of the sheet to export data to.")
+    args = parser.parse_args()
+
+    date_label = None
+    if args.date:
+        try:
+            dt = datetime.datetime.strptime(args.date, "%m%d%Y")
+            date_label = dt.strftime("%B %d")
+        except ValueError:
+            pass
+            
+    # For export, we expect standard date string logic from main scraped if nothing is passed, 
+    # but the frontend action will pass the same DDMMYYYY to both scripts via payload.
+    # To keep it safe, let's just parse the args.date as the target_date_str if provided in YYYY-MM-DD
+    target_dt_export = None
+    if args.date:
+        # Action client payload target_date is currently MMDDYYYY for the scraper
+        target_dt = datetime.datetime.strptime(args.date, "%m%d%Y")
+        target_dt_export = target_dt.strftime("%Y-%m-%d")
+        if not date_label:
+            date_label = target_dt.strftime("%B %d")
+
+    export_db_to_sheets(date_label=date_label, target_date_str=target_dt_export, target_sheet_name=args.sheetname)
