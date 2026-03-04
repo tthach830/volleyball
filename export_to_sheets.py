@@ -7,7 +7,6 @@ import datetime
 
 def export_db_to_sheets(date_label=None, source_url=None, target_date_str=None):
     if not target_date_str:
-        import datetime
         target_date_str = datetime.datetime.now().strftime("%Y-%m-%d")
     print("Connecting to Google Sheets...")
     
