@@ -201,7 +201,7 @@ def run_scraper(specific_date=None, target_sheet_name=None):
             c.execute("INSERT INTO slots (court_id, time_slot, status, date) VALUES (?, ?, ?, ?)", (court_id, slot, 'available', target_date_str))
             
         for slot in court['booked_slots']:
-            c.execute("INSERT INTO slots (court_id, time_slot, status, date) VALUES (?, ?, ?, ?)", (court_id, slot, 'unavailable', target_date_str))
+            c.execute("INSERT INTO slots (court_id, time_slot, status, date) VALUES (?, ?, ?, ?)", (court_id, slot, 'reserved', target_date_str))
             
     # Inject Dream and Harbor courts as fully available for all generated timeslots
     c.execute("SELECT DISTINCT time_slot FROM slots")

@@ -88,8 +88,8 @@ def export_db_to_sheets(date_label=None, source_url=None, target_date_str=None, 
         conn.close()
         return
 
-    # Get all distinct time slots for the header
-    c.execute("SELECT DISTINCT time_slot FROM slots ORDER BY id") 
+    # Get all distinct time slots for the header, filtered by date
+    c.execute("SELECT DISTINCT time_slot FROM slots WHERE date = ? OR date IS NULL ORDER BY id", (target_date_str,)) 
     time_slots = [row[0] for row in c.fetchall()]
     
     if not time_slots:
@@ -113,6 +113,7 @@ def export_db_to_sheets(date_label=None, source_url=None, target_date_str=None, 
             worksheet = sh.add_worksheet(title=target_sheet_name, rows="100", cols="25")
     else:
         worksheet = sh.sheet1
+        worksheet.clear() # ALWAYS clear existing content to prevent old columns from historical dates persisting
         
     print(f"Writing data to the sheet: {worksheet.title}...")
     
@@ -176,7 +177,7 @@ def export_db_to_sheets(date_label=None, source_url=None, target_date_str=None, 
                         "booleanRule": {
                             "condition": {
                                 "type": "TEXT_CONTAINS",
-                                "values": [{"userEnteredValue": "unavailable"}]
+                                "values": [{"userEnteredValue": "reserved"}]
                             },
                             "format": {
                                 "backgroundColor": {
