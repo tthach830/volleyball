@@ -580,11 +580,17 @@
                 transition: all 0.2s;
             }
 
-            .status-cell:hover:not(.unavailable) {
+            .status-cell:hover:not(.unavailable):not(.reserved) {
                 background-color: rgba(255, 255, 255, 0.1);
             }
 
             .unavailable {
+                background-color: rgba(239, 68, 68, 0.8) !important;
+                color: white;
+                cursor: not-allowed;
+            }
+
+            .reserved {
                 background-color: rgba(239, 68, 68, 0.8) !important;
                 color: white;
                 cursor: not-allowed;
@@ -792,6 +798,8 @@
 
                         if (status.toLowerCase().includes('unavailable')) {
                             td.classList.add('unavailable');
+                        } else if (status.toLowerCase().includes('reserved')) {
+                            td.classList.add('reserved');
                         }
 
                         // The *first* data column (index 0 in shifted array) is always the current hour slot
@@ -875,7 +883,7 @@
 
                         for (let slotData of dataOffsets) {
                             const status = String(currentTableData[i][slotData.dataIndex]).trim().toLowerCase();
-                            if (slotData.slotName === currentSlotName && status.includes('unavailable')) {
+                            if (slotData.slotName === currentSlotName && (status.includes('unavailable') || status.includes('reserved'))) {
                                 isAvailable = false;
                                 break;
                             }
@@ -1228,6 +1236,10 @@
                             td.style.backgroundColor = '#1e293b';
                         } else if (idx > 0 && status.toLowerCase().includes('unavailable')) {
                             td.classList.add('unavailable');
+                            td.style.backgroundColor = 'rgba(239, 68, 68, 0.8)';
+                            td.style.color = 'white';
+                        } else if (idx > 0 && status.toLowerCase().includes('reserved')) {
+                            td.classList.add('reserved');
                             td.style.backgroundColor = 'rgba(239, 68, 68, 0.8)';
                             td.style.color = 'white';
                         }

@@ -98,6 +98,9 @@ def export_db_to_sheets(date_label=None, source_url=None, target_date_str=None, 
         print("No time slots found. Skipping export.")
         conn.close()
         return
+
+    # Cap at 16 time slots so data only extends to column R (A=court, B=LastUpdated, C-R=16 slots)
+    time_slots = time_slots[:16]
     
     if not date_label:
         today = datetime.datetime.now()
