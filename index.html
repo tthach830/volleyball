@@ -1364,7 +1364,17 @@
             }
 
             // Load data on page load
-            window.addEventListener('DOMContentLoaded', loadTableData);
+            window.addEventListener('DOMContentLoaded', () => {
+                loadTableData();
+
+                // Re-run updateMap every minute so the map dot colors and hour label
+                // always reflect the actual current time slot without a full page reload.
+                setInterval(() => {
+                    if (currentTableData && currentTableData.length > 0) {
+                        updateMap();
+                    }
+                }, 60000);
+            });
         </script>
 
         <!-- Cloudflare Web Analytics -->
