@@ -420,7 +420,7 @@
         <main class="glass-panel" style="height: auto; min-height: 0;">
             <h2 class="section-title">Court Status <span
                     style="font-size: 0.9rem; font-weight: 400; color: var(--text-secondary);">(last update: <span
-                        id="last-updated-text">...</span>)</span></h2>
+                        id="last-updated-text">...</span>)</span><span class="live-dot" id="live-dot" title="Auto-refreshing every 30s"></span></h2>
             <p style="text-align: center; color: #fca5a5; font-size: 0.9rem; margin-top: -0.5rem; margin-bottom: 1rem;">
                 <span
                     style="display: inline-block; width: 12px; height: 12px; background-color: #ef4444; border-radius: 50%; margin-right: 6px; vertical-align: middle;"></span>
@@ -603,6 +603,27 @@
                 opacity: 0.5;
                 cursor: wait;
             }
+
+            @keyframes livePulse {
+                0%, 100% { opacity: 1; transform: scale(1); }
+                50% { opacity: 0.4; transform: scale(0.75); }
+            }
+
+            .live-dot {
+                display: inline-block;
+                width: 8px;
+                height: 8px;
+                background-color: #4ade80;
+                border-radius: 50%;
+                margin-left: 6px;
+                vertical-align: middle;
+                animation: livePulse 2s ease-in-out infinite;
+            }
+
+            .live-dot.syncing {
+                background-color: #facc15;
+                animation: livePulse 0.4s ease-in-out infinite;
+            }
         </style>
 
         <script>
@@ -652,6 +673,42 @@
                 }
             }
             window.addEventListener('resize', resizeMap);
+
+            async function silentRefresh() {
+                // Skip if any cell update is in-flight to avoid clobbering optimistic UI
+                if (document.querySelector('.updating')) return;
+
+                const dot = document.getElementById('live-dot');
+                if (dot) dot.classList.add('syncing');
+
+                try {
+                    const response = await fetch(GOOGLE_APPS_SCRIPT_URL);
+                    const result = await response.json();
+
+                    if (result.status === 'success') {
+                        const newLastUpdated = result.lastUpdated || '';
+                        const dataChanged = newLastUpdated !== storedLastUpdated ||
+                            JSON.stringify(result.data) !== JSON.stringify(currentTableData);
+
+                        if (dataChanged) {
+                            storedLastUpdated = newLastUpdated;
+                            currentTableData = result.data;
+                            const updateText = document.getElementById('last-updated-text');
+                            if (updateText && storedLastUpdated) updateText.innerText = storedLastUpdated;
+                        }
+                    }
+                } catch (e) {
+                    // Network error — swallow silently, re-render from cache below
+                    console.warn('Silent refresh failed:', e);
+                } finally {
+                    // Always re-render so the time slot column stays current
+                    if (currentTableData && currentTableData.length > 0) {
+                        renderTableData(currentTableData, storedLastUpdated);
+                        updateMap();
+                    }
+                    if (dot) dot.classList.remove('syncing');
+                }
+            }
 
             async function loadTableData() {
                 try {
@@ -1369,14 +1426,10 @@
             window.addEventListener('DOMContentLoaded', () => {
                 loadTableData();
 
-                // Re-render the table and map every minute so the current time slot
-                // column is always first and the map dots reflect the correct hour.
-                setInterval(() => {
-                    if (currentTableData && currentTableData.length > 0) {
-                        renderTableData(currentTableData, storedLastUpdated);
-                        updateMap();
-                    }
-                }, 60000);
+                // Re-fetch live data from the server every 30 seconds so availability
+                // changes made by others appear automatically. Also keeps the time slot
+                // column current when the hour rolls over.
+                setInterval(silentRefresh, 30000);
             });
         </script>
 
