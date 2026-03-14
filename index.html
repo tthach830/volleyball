@@ -614,6 +614,7 @@
             let currentTableData = [];
             let timeSlots = [];
             let timestampColIndex = -1;
+            let storedLastUpdated = '';
 
             // State for future scraping
             let futurePollInterval = null;
@@ -660,11 +661,12 @@
                     const result = await response.json();
 
                     if (result.status === "success") {
-                        renderTableData(result.data, result.lastUpdated);
+                        storedLastUpdated = result.lastUpdated || '';
+                        renderTableData(result.data, storedLastUpdated);
 
-                        if (result.lastUpdated) {
+                        if (storedLastUpdated) {
                             const updateText = document.getElementById('last-updated-text');
-                            if (updateText) updateText.innerText = result.lastUpdated;
+                            if (updateText) updateText.innerText = storedLastUpdated;
                         }
                     } else {
                         document.getElementById('loading-text').innerText = "API Error: " + result.message;
@@ -1367,10 +1369,11 @@
             window.addEventListener('DOMContentLoaded', () => {
                 loadTableData();
 
-                // Re-run updateMap every minute so the map dot colors and hour label
-                // always reflect the actual current time slot without a full page reload.
+                // Re-render the table and map every minute so the current time slot
+                // column is always first and the map dots reflect the correct hour.
                 setInterval(() => {
                     if (currentTableData && currentTableData.length > 0) {
+                        renderTableData(currentTableData, storedLastUpdated);
                         updateMap();
                     }
                 }, 60000);
