@@ -818,8 +818,24 @@
 
                     // Add click listener to the court name to toggle its current hour cell
                     tdName.addEventListener('click', () => {
-                        if (currentHourTdElement) {
-                            // Pass the current slot name from shiftedTimeSlots[0]
+                        // Recompute the current slot at click time (page may have loaded in a different hour)
+                        const clickNow = new Date();
+                        const clickH = clickNow.getHours();
+                        const clickAm = clickH < 12 ? 'am' : 'pm';
+                        const clickHour1 = clickH % 12 || 12;
+                        const clickNextH = clickH + 1;
+                        const clickNextAm = clickNextH < 12 || clickNextH >= 24 ? 'am' : 'pm';
+                        const clickHour2 = clickNextH % 12 || 12;
+                        const clickSlotName = `${clickHour1}${clickAm}-${clickHour2}${clickNextAm}`.toLowerCase();
+
+                        // Find this slot in the shifted list to get the correct td
+                        const shiftedIdx = shiftedTimeSlots.findIndex(s => s.toLowerCase() === clickSlotName);
+                        const cells = tr.querySelectorAll('.status-cell');
+
+                        if (shiftedIdx !== -1 && cells[shiftedIdx]) {
+                            handleCellClick(cells[shiftedIdx], courtName, shiftedTimeSlots[shiftedIdx]);
+                        } else if (currentHourTdElement) {
+                            // Fallback: use the slot that was current when the page loaded
                             handleCellClick(currentHourTdElement, courtName, shiftedTimeSlots[0]);
                         } else {
                             alert("Current hour slot is not available in the table.");
