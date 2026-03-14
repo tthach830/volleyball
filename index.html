@@ -705,7 +705,7 @@
                     }
                 }
 
-                // Helper to get current hour string (e.g. "5:00 pm - 6:00 pm")
+                // Helper to get current hour string (e.g. "01pm-02pm")
                 const now = new Date();
                 let h = now.getHours();
                 let am = h < 12 ? 'am' : 'pm';
@@ -713,7 +713,7 @@
                 let nextH = h + 1;
                 let nextAm = nextH < 12 || nextH >= 24 ? 'am' : 'pm';
                 let hour2 = nextH % 12 || 12;
-                const currentSlotName = `${hour1}${am}-${hour2}${nextAm}`.toLowerCase();
+                const currentSlotName = `${String(hour1).padStart(2,'0')}${am}-${String(hour2).padStart(2,'0')}${nextAm}`.toLowerCase();
 
                 // Find which array index corresponds to the current hour slot
                 let currentSlotIndex = timeSlots.findIndex(s => s.toLowerCase() === currentSlotName);
@@ -828,7 +828,7 @@
                         const clickNextH = clickH + 1;
                         const clickNextAm = clickNextH < 12 || clickNextH >= 24 ? 'am' : 'pm';
                         const clickHour2 = clickNextH % 12 || 12;
-                        const clickSlotName = `${clickHour1}${clickAm}-${clickHour2}${clickNextAm}`.toLowerCase();
+                        const clickSlotName = `${String(clickHour1).padStart(2,'0')}${clickAm}-${String(clickHour2).padStart(2,'0')}${clickNextAm}`.toLowerCase();
 
                         // Find this slot in the shifted list to get the correct td
                         const shiftedIdx = shiftedTimeSlots.findIndex(s => s.toLowerCase() === clickSlotName);
@@ -880,12 +880,12 @@
                 let nextAm = nextH < 12 || nextH >= 24 ? 'am' : 'pm';
                 let hour2 = nextH % 12 || 12;
 
-                // Generate the current slot name (e.g., "7am-8am")
-                const currentSlotName = `${hour1}${am}-${hour2}${nextAm}`.toLowerCase();
+                // Generate the current slot name (e.g., "01pm-02pm")
+                const currentSlotName = `${String(hour1).padStart(2,'0')}${am}-${String(hour2).padStart(2,'0')}${nextAm}`.toLowerCase();
 
                 // Update the display text for the map legend
                 const hourTextEl = document.getElementById('current-hour-text');
-                if (hourTextEl) hourTextEl.innerText = `${hour1}${am.toUpperCase()}-${hour2}${nextAm.toUpperCase()}`;
+                if (hourTextEl) hourTextEl.innerText = `${String(hour1).padStart(2,'0')}${am.toUpperCase()}-${String(hour2).padStart(2,'0')}${nextAm.toUpperCase()}`;
 
                 const availabilityMap = {};
                 if (currentTableData && currentTableData.length > 0) {
