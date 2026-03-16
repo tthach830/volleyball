@@ -814,6 +814,7 @@
 
                     const tr = document.createElement('tr');
                     const courtName = String(rows[i][0]).trim();
+                    tr.dataset.court = courtName;
 
                     // Track the td element corresponding to the current hour for this row
                     let currentHourTdElement = null;
@@ -874,6 +875,7 @@
 
                         // Make ALL data cells clickable to toggle their status
                         const timeSlotName = shiftedTimeSlots[index];
+                        td.dataset.timeSlot = timeSlotName;
                         td.addEventListener('click', () => handleCellClick(td, courtName, timeSlotName));
                         tr.appendChild(td);
                     });
@@ -985,7 +987,29 @@
                     dot.style.borderRadius = '50%';
                     dot.style.backgroundColor = isAvail ? 'rgba(0, 255, 0, 0.6)' : 'rgba(239, 68, 68, 0.8)'; // darker red matching UI
                     dot.style.border = '2px solid black';
-                    dot.style.pointerEvents = 'none';
+                    dot.style.cursor = 'pointer';
+                    dot.style.pointerEvents = 'auto';
+                    dot.title = `Toggle ${c.court} for current hour`;
+
+                    dot.addEventListener('click', () => {
+                        const now = new Date();
+                        const h = now.getHours();
+                        const am = h < 12 ? 'am' : 'pm';
+                        const hour1 = h % 12 || 12;
+                        const nextH = h + 1;
+                        const nextAm = nextH < 12 || nextH >= 24 ? 'am' : 'pm';
+                        const hour2 = nextH % 12 || 12;
+                        const slotName = `${String(hour1).padStart(2,'0')}${am}-${String(hour2).padStart(2,'0')}${nextAm}`.toLowerCase();
+
+                        const courtRow = document.querySelector(`tr[data-court="${CSS.escape(c.court)}"]`);
+                        if (!courtRow) return;
+                        const td = courtRow.querySelector(`td[data-time-slot="${slotName}"]`);
+                        if (td) {
+                            handleCellClick(td, c.court, slotName);
+                        } else {
+                            alert('Current hour slot not found for ' + c.court);
+                        }
+                    });
 
                     const label = document.createElement('div');
                     label.innerText = `Court ${c.court.split(' ').pop().replace(/^0/, '')}`;
