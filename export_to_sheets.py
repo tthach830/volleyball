@@ -88,9 +88,28 @@ def export_db_to_sheets(date_label=None, source_url=None, target_date_str=None, 
         conn.close()
         return
 
-    # Get all distinct time slots for the header, filtered by date
-    c.execute("SELECT DISTINCT time_slot FROM slots WHERE date = ? OR date IS NULL ORDER BY id", (target_date_str,)) 
-    time_slots = [row[0] for row in c.fetchall()]
+    # Get all distinct time slots for the header, filtered by date, sorted chronologically
+    c.execute("SELECT DISTINCT time_slot FROM slots WHERE date = ? OR date IS NULL", (target_date_str,))
+    raw_slots = [row[0] for row in c.fetchall()]
+
+    def slot_sort_key(slot):
+        # Parse the start hour from formats like "07am-08am" or "07pm-08pm"
+        try:
+            start = slot.split('-')[0]  # e.g. "07am"
+            import re
+            m = re.match(r'(\d+)(am|pm)', start.lower())
+            if m:
+                h = int(m.group(1))
+                meridiem = m.group(2)
+                if meridiem == 'am':
+                    return h % 12  # 12am -> 0, 1am -> 1, ..., 11am -> 11
+                else:
+                    return (h % 12) + 12  # 12pm -> 12, 1pm -> 13, ..., 11pm -> 23
+        except:
+            pass
+        return 99
+
+    time_slots = sorted(raw_slots, key=slot_sort_key)
     
     if not time_slots:
         # If we have courts but no slots (e.g. Dream courts only), we still need some slots to show
