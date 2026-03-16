@@ -121,8 +121,8 @@ def run_scraper(specific_date=None, target_sheet_name=None):
             while current < end_dt:
                 next_hour = current + datetime.timedelta(hours=1)
                 # Formats like '7am-8am' or '12pm-1pm'
-                current_str = current.strftime('%#I%p').lower()
-                next_str = next_hour.strftime('%#I%p').lower()
+                current_str = current.strftime('%I%p').lower()
+                next_str = next_hour.strftime('%I%p').lower()
                 hours.append(f"{current_str}-{next_str}")
                 current = next_hour
             return hours
