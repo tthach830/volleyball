@@ -4,5 +4,13 @@
 			"path": "."
 		}
 	],
-	"settings": {}
+	"settings": {
+		"chat.tools.terminal.autoApprove": {
+			"/^python verify_system\\.py$/": {
+				"approve": true,
+				"matchCommandLine": true
+			},
+			"git stash": true
+		}
+	}
 }
